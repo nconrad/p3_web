@@ -1,0 +1,10 @@
+
+language: node_js
+node_js:
+  - "6"
+install:
+  - yarn
+script:
+  - ./buildClient.sh
+cache:
+  yarn: true
