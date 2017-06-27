@@ -1,4 +1,4 @@
-#!/bin/sh     
+#!/bin/sh
 
 maxParam=""
 if [ -f /proc/cpuinfo ] ; then
@@ -10,4 +10,8 @@ fi
 
 cd public/js/
 ./util/buildscripts/build.sh --profile ./release.profile.js --release  $maxParam
-cd ../../
+
+returnCode=$?;
+if [[ $returnCode != 0 ]]; then
+    exit $returnCode;
+fi
