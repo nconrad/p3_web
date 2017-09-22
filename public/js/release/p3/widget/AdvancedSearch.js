@@ -212,15 +212,20 @@ define("p3/widget/AdvancedSearch", [
 
 		formatsp_gene: function(docs, total){
 			var out=["<div class=\"searchResultsContainer featureResults\">", '<div class="resultTypeHeader"><a class="navigationLink" href="/view/SpecialtyGeneList/?', this.state.search, "#view_tab=specialtyGenes&filter=false", '">Specialty Genes&nbsp;(', total, ")</div> </a>"];
+			// console.log("formatsp_gene, docs: ", docs);
 			docs.forEach(function(doc){
 				out.push("<div class='searchResult'>");
-				out.push("<div class='resultHead'><a class=\"navigationLink\" href='/view/SpecialtyGeneList/" + doc.feature_id + "'>" + doc.product + "</a>");
+				out.push("<div class='resultHead'><a class=\"navigationLink\" href='/view/Feature/" + doc.feature_id + "'>" + doc.product + "</a>");
 				if (doc.gene) {  out.push(" | " + doc.gene ); }
 				out.push("</div>");
 
 				out.push("<div class='resultInfo'>" + doc.genome_name +  "</div>");
 
-				out.push("<div class='resultInfo'>" + doc.annotation + " | " + doc.feature_type);
+				out.push("<div class='resultInfo'>" + doc.property + " | " + doc.source);
+
+				if (doc.evidence){
+					out.push("&nbsp;|&nbsp;" + doc.evidence);
+				}
 
 				if (doc.refseq_locus_tag){
 					out.push("&nbsp;|&nbsp;" + doc.refseq_locus_tag);
@@ -390,7 +395,12 @@ define("p3/widget/AdvancedSearch", [
 						break;
 				}
 
-				q[type] = {dataType: type, accept: "application/solr+json", query: tq + "&limit(3)&sort(-score)" }
+				if (type == "genome_feature") {
+					// for genome features, sort by annotation first then by scores so as to show PATRIC features first
+					q[type] = {dataType: type, accept: "application/solr+json", query: tq + "&limit(3)&sort(+annotation,-score)" }				
+				} else {
+					q[type] = {dataType: type, accept: "application/solr+json", query: tq + "&limit(3)&sort(-score)" }
+				}
 			})
 
 			console.log("SEARCH: ", q);

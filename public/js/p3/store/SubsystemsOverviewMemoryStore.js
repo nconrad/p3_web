@@ -109,6 +109,27 @@ define([
 
 		queryTypes: {
 
+			// subsystems_overview: "&group((field,subsystem_id),(format,simple),(ngroups,true),(limit,1),(facet,true))" +
+			// "&json(facet," + encodeURIComponent(JSON.stringify({
+
+			// 	stat: {
+			// 		type: "field",
+			// 		field: "superclass",
+			// 		limit: -1,
+			// 		facet: {
+			// 			class: {
+			// 				type: "field",
+			// 				field: "class",
+			// 				limit: -1,
+			// 				facet: {
+			// 					gene_count: "unique(feature_id)"
+			// 				}
+			// 			}
+			// 		}
+			// 	}
+
+			// })) + ")"
+			
 			subsystems_overview: "&group((field,subsystem_id),(format,simple),(ngroups,true),(limit,1),(facet,true))" +
 			"&json(facet," + encodeURIComponent(JSON.stringify({
 				stat: {
@@ -118,7 +139,7 @@ define([
 						facet: {
 							gene_count: "unique(feature_id)"
 						}
-					}
+					}	
 				}
 			})) + ")"
 
@@ -132,11 +153,6 @@ define([
 					q.push("in(genome_id,(" + this.state.genome_ids.map(encodeURIComponent).join(",") + "))");
 				}
 
-				// if(this.state.hashParams && this.state.hashParams.filter){
-				// 	if(this.state.hashParams.filter != "false"){
-				// 		q.push(this.state.hashParams.filter);
-				// 	}
-				// }
 				if(q.length < 1){
 					q = "";
 				}

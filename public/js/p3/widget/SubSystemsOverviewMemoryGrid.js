@@ -1,15 +1,16 @@
 define([
   "dojo/_base/declare", "dijit/layout/BorderContainer", "dojo/on", "dojo/_base/Deferred",
-  "dojo/dom-class", "dijit/layout/ContentPane", "dojo/dom-construct",
+  "dojo/dom-class", "dijit/layout/ContentPane", "dojo/dom-construct", "dijit/Tooltip",
   "dojo/_base/xhr", "dojo/_base/lang", "./PageGrid", "./formatter", "../store/SubsystemsOverviewMemoryStore", "dojo/request",
-  "dojo/aspect", "./GridSelector", "dojo/when", "d3/d3", "dojo/Stateful", "dojo/topic"
+  "dojo/aspect", "./GridSelector", "dojo/when", "d3/d3", "dojo/Stateful", "dojo/topic", "../util/PathJoin", "dojo/promise/all"
 ], function(declare, BorderContainer, on, Deferred,
-      domClass, ContentPane, domConstruct,
+      domClass, ContentPane, domConstruct, Tooltip,
       xhr, lang, Grid, formatter, SubsystemsOverviewMemoryStore, request,
-      aspect, selector, when, d3, Stateful, Topic){
+      aspect, selector, when, d3, Stateful, Topic, PathJoin, All){
   return declare([Stateful], {
     store: null,
     subsystemSvg: null,
+    genomeView: false,
 
     constructor: function(){
 
@@ -82,10 +83,13 @@ define([
       var titleText; 
 
       if (this.state.genome) {
+        this.genomeView = true;
         titleText = this.state.genome.genome_name
-      } else if (this.state.taxonomy) {
+      } 
+      else if (this.state.taxonomy) {
         titleText = this.state.taxonomy.taxon_name
-      } else {
+      } 
+      else {
         titleText = "";
       }
 
@@ -103,18 +107,22 @@ define([
 
       var svg = d3.select('#subsystemspiechart')
         .append('svg')
+        .attr("id", "piechart")
+        .attr("class", "summarychart")
         .attr('width', width)
         .attr('height', height)
         .append('g')
-        .attr('transform', 'translate(' + (height / 2 + 100) +
+        .attr('transform', 'translate(' + (height / 2 + 200) +
           ',' + (height / 2 + 50) + ')');
 
       d3.select('#subsystemspiechart svg')
         .append("text")
-        .attr("x", height / 2 + 100)             
+        .attr("x", height / 2 + 200)             
         .attr("y", 50)
         .attr("text-anchor", "middle")
-        .text(titleText);
+        .style("font-weight", "bold")
+        .style("font-size", "14px")
+        .text("Subsystem Category Distribution - " + titleText);
 
       var arc = d3.svg.arc()
         .innerRadius(0)
@@ -130,7 +138,7 @@ define([
         .append('path')
         .attr('d', arc)
         .on("mouseover", function(d) {
-          return tooltip.style("visibility", "visible").text(d.data.val);
+          return tooltip.style("visibility", "visible").text(d.data.val + " (" + d.data.count + ")");
         })
         .on("click", function(d) {
           that.navigateToSubsystemsSubTab(d);
@@ -145,19 +153,30 @@ define([
 
       var legendHolder = svg.append('g')
         .attr('transform', "translate(" + (margin.left + radius) + ",0)")
+        .attr("id", "legendHolder");
 
       var subsystemslegend = legendHolder.selectAll('.subsystemslegend')
-          .data(color.domain())
-          .enter()
-          .append('g')
-          .attr('class', 'subsystemslegend')
-          .attr('transform', function(d, i) {
-            var height = legendRectSize + legendSpacing;
-            var offset =  height * color.domain().length / 2;
-            var horz = -2 * legendRectSize;
-            var vert = i * height - offset;
-            return 'translate(' + horz + ',' + vert + ')';
-        });
+        .data(color.domain())
+        .enter()
+        .append('g')
+        .attr('class', 'subsystemslegend')
+        .attr('transform', function(d, i) {
+          var height = legendRectSize + legendSpacing;
+          var offset =  height * color.domain().length / 2;
+          var horz = -2 * legendRectSize;
+          var vert = i * height - offset;
+          return 'translate(' + horz + ',' + vert + ')';
+      });
+
+      var legendCount = legendHolder.selectAll('.subsystemslegend').size();
+      var legendTitleOffset = legendCount * legendRectSize / 2 + 70;
+
+      legendHolder.append('text')
+        .attr('x', 0)
+        .attr('y', -legendTitleOffset)
+        .style("font-weight", "bold")
+        .style("font-size", "14px")
+        .text("Subsystem Feature Counts");
 
       subsystemslegend.append('rect')
           .attr("x", 0)
@@ -171,34 +190,241 @@ define([
           .attr('y', legendRectSize - legendSpacing)
           .text(function(d) { return d; });
 
+      subsystemslegend.on("click", function(d) {
+        var subystemData = {};
+        subystemData.data = {};
+        var re = /.*\(/;
+        var classname = d.match(re);
+        subystemData.data.val = classname[0].slice(0, -2);
+        that.navigateToSubsystemsSubTab(subystemData);
+      })
+
       var tooltip = d3.select("body")
           .append("div")
           .style("position", "absolute")
           .style("z-index", "10")
           .style("visibility", "hidden")
 
+      if (this.genomeView) {
+        var summaryBarWidth = width / 4;
+        var summaryBarHeight = height;
+
+        this.getSubsystemCoverageData(summaryBarWidth, summaryBarHeight);
+      }
+
       this.setSubsystemPieGraph();
     },
 
-    navigateToSubsystemsSubTab: function(d) {
-
-        switch (d.data.val) {
-          case "Other":
-            //do nothing
-            break;
-          default:
-            Topic.publish("navigateToSubsystemsSubTab", d.data);
-            break;
+    getTotalSubsystems: function() {
+      var def = new Deferred();
+      //total subsystems
+      var query = "?and(eq(genome_id," + this.state.genome.genome_id + "))&limit(1)"
+      when(request.get(PathJoin(window.App.dataAPI, 'subsystem/', query), {
+        handleAs: 'json',
+        headers: {
+          'Accept': "application/solr+json",
+          'Content-Type': "application/rqlquery+x-www-form-urlencoded",
+          'X-Requested-With': null,
+          'Authorization': (window.App.authorizationToken || "")
         }
+      }), function(data){
+        def.resolve(data.response.numFound);
+      }, function(err){
+        console.log(err)
+      });
+      return def.promise;
+    },
+
+    getTotalSubsystemsHypothetical: function() {
+      var def = new Deferred();
+       //total subsystems hypothetical
+      var query = "?and(eq(genome_id," + this.state.genome.genome_id + "),eq(product,*hypothetical*protein*))&limit(1)"
+      when(request.get(PathJoin(window.App.dataAPI, 'subsystem/', query), {
+        handleAs: 'json',
+        headers: {
+          'Accept': "application/solr+json",
+          'Content-Type': "application/rqlquery+x-www-form-urlencoded",
+          'X-Requested-With': null,
+          'Authorization': (window.App.authorizationToken || "")
+        }
+      }), function(data){
+        def.resolve(data.response.numFound);
+      }, function(err){
+        console.log(err)
+      });
+      return def.promise;
+    },
+
+    getTotalGenomes: function() {
+      var def = new Deferred();
+      //total genome features
+      var query = "?and(eq(genome_id," + this.state.genome.genome_id + "),eq(annotation,PATRIC))&limit(1)"
+      when(request.get(PathJoin(window.App.dataAPI, 'genome_feature/', query), {
+        handleAs: 'json',
+        headers: {
+          'Accept': "application/solr+json",
+          'Content-Type': "application/rqlquery+x-www-form-urlencoded",
+          'X-Requested-With': null,
+          'Authorization': (window.App.authorizationToken || "")
+        }
+      }), function(data){
+        def.resolve(data.response.numFound);
+      }, function(err){
+        console.log(err)
+      });
+      return def.promise;
+    },
+
+    getTotalGenomesHypothetical: function() {
+      var def = new Deferred();
+      //total genome features hypothetical
+      var query = "?and(eq(genome_id," + this.state.genome.genome_id + "),eq(annotation,PATRIC),eq(product,hypothetical+protein))&limit(1)"
+      when(request.get(PathJoin(window.App.dataAPI, 'genome_feature/', query), {
+        handleAs: 'json',
+        headers: {
+          'Accept': "application/solr+json",
+          'Content-Type': "application/rqlquery+x-www-form-urlencoded",
+          'X-Requested-With': null,
+          'Authorization': (window.App.authorizationToken || "")
+        }
+      }), function(data){
+        def.resolve(data.response.numFound);
+      }, function(err){
+        console.log(err)
+      });
+      return def.promise;
+    },
+
+    getSubsystemCoverageData: function(width, height) {
+      var that = this;
+
+      All({
+        totalSubsystems:              this.getTotalSubsystems(),
+        totalSubsystemsHypothetical:  this.getTotalSubsystemsHypothetical(),
+        totalGenomes:                 this.getTotalGenomes(),
+        totalGenomesHypothetical:     this.getTotalGenomesHypothetical()
+      }).then(function(subsystemCoverageData) {
+        that.renderSubsystemCoverageData(subsystemCoverageData, width, height);
+      });
+    },
+
+    renderSubsystemCoverageData: function(subsystemCoverageData, width, height) {
+
+      var that = this;
+
+      subsystemCoverageData.totalSubsystemsNotHypothetical = subsystemCoverageData.totalSubsystems - subsystemCoverageData.totalSubsystemsHypothetical;
+      subsystemCoverageData.totalNotCovered = subsystemCoverageData.totalGenomes - subsystemCoverageData.totalSubsystems;
+      subsystemCoverageData.totalNotCoveredHypothetical = subsystemCoverageData.totalGenomesHypothetical - subsystemCoverageData.totalSubsystemsHypothetical;
+      subsystemCoverageData.totalNotCoveredNotHypothetical = subsystemCoverageData.totalNotCovered - subsystemCoverageData.totalNotCoveredHypothetical;
+
+      var proportionCovered = (subsystemCoverageData.totalSubsystems / subsystemCoverageData.totalGenomes).toFixed(2);
+      var proportionNotCovered = (subsystemCoverageData.totalNotCovered / subsystemCoverageData.totalGenomes).toFixed(2);
+
+      var marginAdjustedTotalbarHeight = height * .9;
+      var marginTop = height - marginAdjustedTotalbarHeight;
+
+      var divHeightCovered = proportionCovered * marginAdjustedTotalbarHeight;
+      var divHeightNotCovered = proportionNotCovered * marginAdjustedTotalbarHeight;
+
+      var percentCovered = proportionCovered * 100;
+      var percentNotCovered = proportionNotCovered * 100;
+
+      var totalHeight = divHeightCovered + divHeightNotCovered;
+
+      var svg = d3.select("#subsystemspiechart svg"),
+          margin = {top: 0, right: 20, bottom: 30, left: 100},
+          width = +svg.attr("width") - margin.left - margin.right,
+          height = +svg.attr("height") - margin.top - margin.bottom,
+          g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      var coveredRect = svg.append("rect")
+                          .attr("x", 120)
+                          .attr("y", marginTop)
+                          .attr("width", 50)
+                          .style("fill", "#399F56")
+                          .attr("id", "subsystemsCovered")
+                          .attr("height", divHeightCovered)
+                          .on("click", function() {
+                            that.navigateToSubsystemsSubTabFromCoverageBar();
+                          });
+
+      var notCoveredRect = svg.append("rect")
+                            .attr("x", 120)
+                            .attr("y", divHeightCovered + marginTop)
+                            .attr("width", 50)
+                            .style("fill", "#3F6993")
+                            .attr("id", "subsystemsNotCovered")
+                            .attr("height", divHeightNotCovered)
+                            .on("click", function() {
+                              that.navigateToSubsystemsSubTabFromCoverageBar();
+                            });
+
+      svg.append("text")
+        .attr("x", 150)             
+        .attr("y", 50)
+        .attr("text-anchor", "middle")
+        .style("font-weight", "bold")
+        .style("font-size", "14px")
+        .text("Subsystem Coverage");
+
+      //percentages
+      svg.append("text")
+        .attr("x", 145)             
+        .attr("y", divHeightCovered / 2 + height / 7)
+        .attr("text-anchor", "middle")
+        .style("fill", "#ffffff")
+        .text(percentCovered + "%");
+
+      svg.append("text")
+        .attr("x", 145)             
+        .attr("y", divHeightNotCovered / 2 + divHeightCovered + height / 14)
+        .attr("text-anchor", "middle")
+        .style("fill", "#ffffff")
+        .text(percentNotCovered + "%");
+
+      //reset print svg to include new graph after long api call
+      this.setSubsystemPieGraph();
+
+      new Tooltip({
+        connectId: ["subsystemsCovered"],
+        label: "<b>In Subsystem</b></br>"
+              + "Total (" + subsystemCoverageData.totalSubsystems + ")</br>"
+              + "Non-Hypothetical (" + subsystemCoverageData.totalSubsystemsNotHypothetical + ")</br>"
+              + "Hypothetical (" + subsystemCoverageData.totalSubsystemsHypothetical + ")"
+      });
+
+      new Tooltip({
+        connectId: ["subsystemsNotCovered"],
+        label: "<b>Not In Subsystem</b></br>"
+              + "Total (" + subsystemCoverageData.totalNotCovered + ")</br>"
+              + "Non-Hypothetical (" + subsystemCoverageData.totalNotCoveredNotHypothetical + ")</br>"
+              + "Hypothetical (" + subsystemCoverageData.totalNotCoveredHypothetical + ")"
+      });
+    },
+
+    navigateToSubsystemsSubTab: function(d) {
+      switch (d.data.val) {
+        case "Other":
+          //do nothing
+          break;
+        default:
+          Topic.publish("navigateToSubsystemsSubTab", d.data);
+          break;
+      }
+    },
+
+    navigateToSubsystemsSubTabFromCoverageBar: function() {
+      Topic.publish("navigateToSubsystemsSubTabFromCoverageBar");
     },
 
     setSubsystemPieGraph: function () {
 
       var html = d3.select("svg")
-            .attr("title", "svg_title")
-            .attr("version", 1.1)
-            .attr("xmlns", "http://www.w3.org/2000/svg")
-            .node().parentNode.innerHTML;
+          .attr("title", "svg_title")
+          .attr("version", 1.1)
+          .attr("xmlns", "http://www.w3.org/2000/svg")
+          .node().parentNode.innerHTML;
+    
       this.subsystemSvg = html;
     },
 
