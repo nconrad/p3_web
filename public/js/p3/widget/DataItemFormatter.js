@@ -565,6 +565,10 @@ define([
 			if (item.document_type === "subsystems_gene") {
 				columns = [
 					{
+						name: 'Superclass',
+						text: 'superclass'
+					},
+					{
 						name: 'Class',
 						text: 'class'
 					}, {
@@ -593,6 +597,10 @@ define([
 				]
 			} else if (item.document_type === "subsystems_subsystem") {
 				columns = [
+					{
+						name: 'Superclass',
+						text: 'superclass'
+					},
 					{
 						name: 'Class',
 						text: 'class'
@@ -1457,6 +1465,14 @@ define([
 						editable: true,
 						type: 'textarea',
 						isList: true
+					}, {
+						name: 'Insert Date',
+						text: 'date_inserted',
+						type: 'date'
+					}, {
+						name: 'Last Modified',
+						text: 'date_modified',
+						type: 'date'
 					}]
 			}
 

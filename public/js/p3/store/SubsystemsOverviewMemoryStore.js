@@ -129,20 +129,6 @@ define([
 				}
 
 			})) + ")"
-
-			// subsystems_overview: "&group((field,subsystem_id),(format,simple),(ngroups,true),(limit,1),(facet,true))" +
-			// "&json(facet," + encodeURIComponent(JSON.stringify({
-			// 	stat: {
-			// 		field: {
-			// 			field: "class",
-			// 			limit: -1,
-			// 			facet: {
-			// 				gene_count: "unique(feature_id)"
-			// 			}
-			// 		}	
-			// 	}
-			// })) + ")"
-
 		},
 		buildQuery: function(){
 			var q = [];
@@ -214,35 +200,11 @@ define([
 
 				//flat queries return a different data format
 				if ( response && response.grouped && response.facets ) {
-
-					//var ds = response.grouped[props[this.type]].doclist.docs;
 					var buckets = response.facets.stat.buckets;
-					//var map = {};
-					// buckets.forEach(function(b){
-					// 	map[b["val"]] = b;
-					// 	delete b["val"];
-					// });
-					// docs = ds.map(function(doc){
-					// 	var p = props[this.type];
-					// 	var pv = doc[p];
-					// 	lang.mixin(doc, map[pv] || {});
-
-					// 	switch(this.type){
-					// 		case "subsystems_overview":
-					// 			doc.document_type = "subsystems_overview";
-					// 			break;
-					// 		default:
-					// 			break;
-					// 	}
-
-					// 	return doc;
-					// }, this);
-
+				
 					_self.setData(buckets);
 					_self._loaded = true;
 					return true;
-
-
 				}
 
 			}), lang.hitch(this, function(err){
