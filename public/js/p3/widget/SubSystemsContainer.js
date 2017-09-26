@@ -177,6 +177,9 @@ define([
 					apiServer: this.apiServer,
 					defaultFilter: this.defaultFilter,
 					store: subsystemsStore,
+					getFilterPanel: function(opts){
+
+					},
 					facetFields: ["superclass", "class", "subclass", "active"],
 					columns: {
 						"Selection Checkboxes": selector({unhidable: true}),
@@ -200,7 +203,10 @@ define([
 					type: "genes",
 					apiServer: this.apiServer,
 					store: geneSubsystemsStore,
-					facetFields: ["class", "subclass", "active", "subsystem_name"],
+					getFilterPanel: function(opts){
+
+					},
+					facetFields: ["superclass", "class", "subclass", "active", "subsystem_name"],
 					columns: {
 						"Selection Checkboxes": selector({unhidable: true}),
 						superclass: 		{label: "Superclass", field: "superclass"},
@@ -229,10 +235,13 @@ define([
 				this.subsystemsGrid = new SubSystemsGridContainer({
 					title: "Subsystems",
 					type: "subsystems",
+					getFilterPanel: function(opts){
+
+					},
 					apiServer: this.apiServer,
 					defaultFilter: this.defaultFilter,
 					store: subsystemsStore,
-					facetFields: ["class", "subclass", "active"],
+					facetFields: ["superclass", "class", "subclass", "active"],
 					columns: {
 						"Selection Checkboxes": selector({unhidable: true}),
 						superclass: 		{label: "Superclass", field: "superclass"},
@@ -254,11 +263,14 @@ define([
 				this.genesGrid = new SubSystemsGridContainer({
 					title: "Genes",
 					type: "genes",
+					getFilterPanel: function(opts){
+
+					},
 					// state: this.state,
 					apiServer: this.apiServer,
 					// defaultFilter: this.defaultFilter,
 					store: geneSubsystemsStore,
-					facetFields: ["class", "subclass", "active", "subsystem_name"],
+					facetFields: ["superclass", "class", "subclass", "active", "subsystem_name"],
 					columns: {
 						"Selection Checkboxes": selector({unhidable: true}),
 						superclass: 		{label: "Superclass", field: "superclass"},
