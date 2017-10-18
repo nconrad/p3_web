@@ -1,10 +1,10 @@
 define([
 	"dojo/_base/declare", "dojo/_base/lang", "dojo/when", "dojo/request", "dojo/dom-construct",
 	"dijit/layout/ContentPane",
-	"./Base", "../../util/PathJoin", "../SubsystemMapContainer"
+	"./Base", "../../util/PathJoin", "../SubsystemMapContainer", "../../util/EncodeURIComponentExpanded"
 ], function(declare, lang, when, request, domConstruct,
 			ContentPane,
-			ViewerBase, PathJoin, SubsystemMapContainer){
+			ViewerBase, PathJoin, SubsystemMapContainer, EncodeURIComponentExpanded){
 	return declare([ViewerBase], {
 		"disabled": false,
 		"query": null,
@@ -28,10 +28,11 @@ define([
 			var subsystemData = this.getStateParams(state);
 
 			state.genome_ids = subsystemData.genome_ids;
+			state.genome_ids_arr = subsystemData.genome_ids.split(',');
 			state.subsystem_id = subsystemData.subsystem_id
 
 			var self = this;
-			when(this.getGenomeIdsBySubsystemId(state.genome_ids, state.subsystem_id), function(genomeIds){
+			when(this.getGenomeIdsBySubsystemId(state.genome_ids_arr, state.subsystem_id), function(genomeIds){
 				state.genome_ids = genomeIds;
 				self.viewer.set('visible', true);
 			});
@@ -90,15 +91,15 @@ define([
 
 		getGenomeIdsBySubsystemId: function(genome_ids, subsystem_id){
 
-			var query = "and(in(genome_id,(" + genome_ids + ")),in(subsystem_id,(" + subsystem_id + ")))&limit(1)&facet((field,genome_id),(mincount,1))&json(nl,map)";
-
-			return when(request.post(PathJoin(window.App.dataAPI, '/subsystem/'), {
+			var query = "q=genome_id:(" + genome_ids.join(" OR ") + ") AND subsystem_id:\"" + encodeURIComponent(subsystem_id) + "\"&rows=1&facet=true&facet.field=genome_id&facet.mincount=1&json.nl=map";
+			
+			return when(request.post(window.App.dataAPI + 'subsystem/', {
 				handleAs: 'json',
 				headers: {
 					'Accept': "application/solr+json",
-					'Content-Type': "application/rqlquery+x-www-form-urlencoded",
+					'Content-Type': "application/solrquery+x-www-form-urlencoded",
 					'X-Requested-With': null,
-					'Authorization': (window.App.authorizationToken || "")
+					'Authorization': window.App.authorizationToken
 				},
 				data: query
 			}), function(response){
