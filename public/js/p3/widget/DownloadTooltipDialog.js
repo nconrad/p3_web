@@ -37,6 +37,7 @@ define([
 			popup.close(this);
 		},
 
+
 		downloadSelection: function(type, selection){
 
 			var conf = this.downloadableConfig[this.containerType];
@@ -56,9 +57,16 @@ define([
 			if(conf.generateDownloadFromStore && this.grid && this.grid.store && type && this["_to" + type]){
 				var query = "in(" + pkField + ",(" + sel.join(",") + "))&sort(+" + pkField + ")&limit(2500000)"
 				when(this.grid.store.query({}), lang.hitch(this, function(results){
-					results = rql.query(query, {}, results);
-					var data = this["_to" + type.toLowerCase()](results);
-					saveAs(new Blob([data]), "PATRIC_" + this.containerType + "." + type);
+					
+					if (pkField === "subsystem_id") {	
+						var data = this["_to" + type.toLowerCase()](selection);
+						saveAs(new Blob([data]), "PATRIC_" + this.containerType + "." + type);
+					} else {
+						results = rql.query(query, {}, results);
+						var data = this["_to" + type.toLowerCase()](results);
+						saveAs(new Blob([data]), "PATRIC_" + this.containerType + "." + type);
+					}
+
 				}));
 			}else{
 
@@ -120,7 +128,14 @@ define([
 					if (obj[key] instanceof Array){
 						io.push(obj[key].join(";"));
 					}else{
-						io.push(obj[key]);
+						//wrap commas because they are used to delineate new columns
+						var cleanedKey;
+						if (typeof obj[key] === 'string') {
+							cleanedKey = "\"" + obj[key] + "\""
+						} else {
+							cleanedKey = obj[key]
+						}
+						io.push(cleanedKey);
 					}
 				})
 

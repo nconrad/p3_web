@@ -328,6 +328,20 @@ define([
 				this.tabContainer.selectChild(this.subsystemsGrid);
 			}));
 
+			Topic.subscribe("navigateToSubsystemsGenesSubTab", lang.hitch(this, function(val){
+
+				var encodedClassKeyword = encodeURIComponent('"' + val + '"');
+				var searchHashParam = "eq(superclass," + encodedClassKeyword + ")"
+
+				var newState = lang.mixin({}, this.state, {hashParams:
+					lang.mixin({}, {filter: searchHashParam})
+				});
+
+				this.state = newState;
+				//this.tabContainer.selectChild(this.genesGrid);
+				this.tabContainer.selectChild(this.subsystemsGrid);
+			}));
+
 			Topic.subscribe("navigateToSubsystemsSubTabFromCoverageBar", lang.hitch(this, function(){
 				this.tabContainer.selectChild(this.subsystemsGrid);
 			}));
