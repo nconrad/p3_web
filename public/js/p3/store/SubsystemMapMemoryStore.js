@@ -36,9 +36,9 @@ define([
 
 				switch(key){
 					case "requestHeatmapData":
-						// console.log("requestHeatmapData with ", value.genomeIds);
-						self.currentData = self.getHeatmapData(value);
-						Topic.publish("SubSystemMap", "updateHeatmapData", self.currentData);
+						Deferred.when(self.getHeatmapData(value), function(response){
+							Topic.publish("SubSystemMap", "updateHeatmapData", response);
+						});
 						break;
 					default:
 						break;
@@ -220,7 +220,7 @@ define([
 						return '"' + idstr + '"'
 					}).join(' OR ');
 
-					var ref_query = 'q=subsystem_id:"' +  encodeURIComponent(_self.state.subsystem_id) + '" AND role_id:(' + roleIDsInQuote + ')&fl=role_id,role_name,class&sort=role_id asc&rows=' + roleIDs.length
+					var ref_query = "q=subsystem_id:\"" +  _self.state.subsystem_id + "\" AND role_id:(" + roleIDsInQuote + ")&fl=role_id,role_name,class&sort=role_id asc&rows=" + roleIDs.length;
 
 					return when(request.post(_self.apiServer + 'subsystem_ref/', {
 						handleAs: 'json',
@@ -266,6 +266,8 @@ define([
 		},
 
 		getHeatmapData: function(pmState){
+
+			var def = new Deferred();
 
 			var rows = [];
 			var cols = [];
@@ -330,20 +332,25 @@ define([
 			if(this.sort && this.sort.length > 0){
 				opts.sort = this.sort;
 			}
-			var data = this.query("", opts);
-
+			
 			var roleOrderMap = {};
+			
+				
 			if(roleOrder !== [] && roleOrder.length > 0){
 				roleOrder.forEach(function(roleId, idx){
 					roleOrderMap[roleId] = idx;
 				});
 			}else{
-				data.forEach(function(role, idx){
+				this.data.forEach(function(role, idx){
 					roleOrderMap[role.role_name] = idx;
 				})
 			}
 
-			data.forEach(function(role){
+			// if (!this.data || this.data.length < 1) {
+			
+			// }
+
+			this.data.forEach(function(role){
 				var meta = {
 					'instances': role.role_count,
 					'members': role.genome_count
@@ -365,7 +372,6 @@ define([
 			}
 
 			//console.log(rows, cols, colorStop);
-
 			var currentData = {
 				'rows': rows,
 				'columns': cols,
@@ -419,7 +425,8 @@ define([
 			// var end = window.performance.now();
 			// console.log('getHeatmapData() took: ', (end - start), "ms");
 
-			return currentData;
+			def.resolve(currentData);
+			return def.promise;
 		}
 	});
 });
