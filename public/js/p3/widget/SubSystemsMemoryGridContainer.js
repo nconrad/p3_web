@@ -11,7 +11,7 @@ define([
 			lang, domConstruct, PerspectiveToolTipDialog,
 			SelectionToGroup, Dialog, DownloadTooltipDialog, Deferred){
 
-	var vfc = '<div class="wsActionTooltip" rel="dna">View FASTA DNA</div><div class="wsActionTooltip" rel="protein">View FASTA Proteins</div><hr><div class="wsActionTooltip" rel="dna">Download FASTA DNA</div><div class="wsActionTooltip" rel="downloaddna">Download FASTA DNA</div><div class="wsActionTooltip" rel="downloadprotein"> ';
+	var vfc = '<div class="wsActionTooltip" rel="dna">View FASTA DNA</div><div class="wsActionTooltip" rel="protein">View FASTA Proteins</div>';
 	var viewFASTATT = new TooltipDialog({
 		content: vfc, onMouseLeave: function(){
 			popup.close(viewFASTATT);
@@ -108,41 +108,6 @@ define([
 			this._set('store', store);
 		},
 
-		// not needed unless future requirements change
-		// getGenomeIds: function(data){
-
-		// 	var def = new Deferred();
-		// 	if(data.hasOwnProperty('taxon_id')){
-
-		// 		var taxon_ids = data.selection.map(function(row) {
-		// 			return row.taxon_id;
-		// 		})
-
-		// 		var query = "?eq(taxon_lineage_ids," + taxon_ids.join(" OR ") + ")&select(genome_id)&limit(25000)";
-		// 		return when(request.get(PathJoin(this.apiServer, "genome", query), {
-		// 			headers: {
-		// 				'Accept': "application/json",
-		// 				'Content-Type': "application/rqlquery+x-www-form-urlencoded"
-		// 			},
-		// 			handleAs: "json"
-		// 		}), function(response){
-
-		// 			var genome_ids = response.map(function(d){
-		// 				return d.genome_id;
-		// 			});
-					
-		// 			def.resolve(genome_ids);
-		// 			return def.promise;
-		// 		});
-		// 	} else {
-		// 		var genome_ids = data.selection.map(function(s){
-		// 			return s.genome_id
-		// 		});
-		// 		def.resolve(genome_ids);
-		// 		return def.promise;
-		// 	}
-		// },
-
 		createFilterPanel: function(){
 			
 			if(this.type === 'genes'){
@@ -212,10 +177,43 @@ define([
 					var data = this.grid.store.query("", {});
 					var headers, content = [], filename;
 
+					var isTaxonView = false;
+					if (this.state.hasOwnProperty("taxon_id")) {
+						isTaxonView = true;
+					}
+
 					switch(this.type){
 
 						case "subsystems":
-							headers = [
+
+							if (isTaxonView) {
+								headers = [
+									"Superclass",
+									"Class",
+									"Subclass",
+									"Subsystem Name",
+									"Genome Count",
+									"Gene Count",
+									"Role Count",
+									"Active"
+
+								]
+
+								data.forEach(function(row){
+									content.push([
+										JSON.stringify(row.superclass),
+										JSON.stringify(row['class']),
+										JSON.stringify(row.subclass),
+										JSON.stringify(row.subsystem_name),
+										JSON.stringify(row.genome_count),
+										JSON.stringify(row.gene_count),
+										JSON.stringify(row.role_count),
+										JSON.stringify(row.active)
+										
+									]);
+								});
+							} else {
+								headers = [
 									"Superclass",
 									"Class",
 									"Subclass",
@@ -227,19 +225,21 @@ define([
 
 								]
 
-							data.forEach(function(row){
-								content.push([
-									JSON.stringify(row.superclass),
-									JSON.stringify(row['class']),
-									JSON.stringify(row.subclass),
-									JSON.stringify(row.subsystem_name),
-									//JSON.stringify(row.genome_count),
-									JSON.stringify(row.gene_count),
-									JSON.stringify(row.role_count),
-									JSON.stringify(row.active)
-									
-								]);
-							});
+								data.forEach(function(row){
+									content.push([
+										JSON.stringify(row.superclass),
+										JSON.stringify(row['class']),
+										JSON.stringify(row.subclass),
+										JSON.stringify(row.subsystem_name),
+										//JSON.stringify(row.genome_count),
+										JSON.stringify(row.gene_count),
+										JSON.stringify(row.role_count),
+										JSON.stringify(row.active)
+										
+									]);
+								});
+							}
+						
 							filename = "PATRIC_subsystems";
 							break;
 
@@ -309,33 +309,64 @@ define([
 				},
 				function(selection){
 
-					var subsystem_ids = selection.map(function(s){
-						return s.subsystem_id
-					});
+					switch(this.type){
+						
+						case "subsystems":
+							var genome_ids = [];
 
-					var query = "q=genome_id:(" + this.state.genome_ids.join(" OR ") + ") AND subsystem_id:(\"" + subsystem_ids.join("\" OR \"") + "\")&fl=feature_id&rows=25000";
-					var that = this;
-					when(request.post(PathJoin(window.App.dataAPI, '/subsystem/'), {
-						handleAs: 'json',
-						headers: {
-							'Accept': "application/solr+json",
-							'Content-Type': "application/solrquery+x-www-form-urlencoded",
-							'X-Requested-With': null,
-							'Authorization': (window.App.authorizationToken || "")
-						},
-						data: query
-					}), function(response){
+							if (selection[0].document_type === "subsystems_gene") {
+								genome_ids = selection.map(function(s){
+									return s.genome_id;
+								})
+							} else {
+								genome_ids = this.state.genome_ids;
+							}
 
-						var feature_ids = response.response.docs.map(function(feature) {
-							return {"feature_id": feature.feature_id}
-						})
-						viewFASTATT.selection = feature_ids;
-						popup.open({
-							popup: that.selectionActionBar._actions.ViewFASTA.options.tooltipDialog,
-							around: that.selectionActionBar._actions.ViewFASTA.button,
-							orient: ["below"]
-						});
-					});
+							var subsystem_ids = selection.map(function(s){
+								return s.subsystem_id
+							});
+
+							var query = "q=genome_id:(" + genome_ids.join(" OR ") + ") AND subsystem_id:(\"" + subsystem_ids.join("\" OR \"") + "\")&fl=feature_id&rows=25000";
+							var that = this;
+							when(request.post(PathJoin(window.App.dataAPI, '/subsystem/'), {
+								handleAs: 'json',
+								headers: {
+									'Accept': "application/solr+json",
+									'Content-Type': "application/solrquery+x-www-form-urlencoded",
+									'X-Requested-With': null,
+									'Authorization': (window.App.authorizationToken || "")
+								},
+								data: query
+							}), function(response){
+
+								var feature_ids = response.response.docs.map(function(feature) {
+									return {"feature_id": feature.feature_id}
+								})
+								viewFASTATT.selection = feature_ids;
+								popup.open({
+									popup: that.selectionActionBar._actions.ViewFASTA.options.tooltipDialog,
+									around: that.selectionActionBar._actions.ViewFASTA.button,
+									orient: ["below"]
+								});
+							});
+							break;
+						
+						case "genes": 
+							
+							var feature_ids = selection.map(function(feature) {
+								return {"feature_id": feature.feature_id}
+							})
+							viewFASTATT.selection = feature_ids;
+							popup.open({
+								popup: this.selectionActionBar._actions.ViewFASTA.options.tooltipDialog,
+								around: this.selectionActionBar._actions.ViewFASTA.button,
+								orient: ["below"]
+							});
+							break;
+						
+						default:
+							break;
+					}	
 				},
 				false
 			],
@@ -355,8 +386,12 @@ define([
 				},
 				function(selection, container){
 
-
 					var selectedRows = [];
+
+					var isTaxonView = false;
+					if (this.state.hasOwnProperty("taxon_id")) {
+						isTaxonView = true;
+					}
 
 					switch(this.type){
 
@@ -369,6 +404,9 @@ define([
 								selectedRow["Class"] = row["class"];
 								selectedRow["Subclass"] = row["subclass"];
 								selectedRow["Subsystem Name"] = row["subsystem_name"];
+								if (isTaxonView) {
+									selectedRow["Genome Count"] = row["genome_count"];
+								}
 								selectedRow["Gene Count"] = row["gene_count"];
 								selectedRow["Role Count"] = row["role_count"];
 								selectedRow["Active"] = row["active"];
@@ -494,58 +532,79 @@ define([
 				},
 				function(selection){
 
-					// for subsystems grab all associated features in async call
-					var genome_ids = selection.map(lang.hitch(this, function(g) {
-						return g.genome_id
-					}));
+					switch(this.type){
 
-					//filter out non-unique genome_ids
-					var unique_genome_ids = [];
-				    for(var i = 0; i < genome_ids.length; i++) {
-				        if(unique_genome_ids.indexOf(genome_ids[i]) === -1) {
-				            unique_genome_ids.push(genome_ids[i]);
-				        }
-				    };
-				   
-					var subsystem_ids = selection.map(lang.hitch(this, function(s) {
-						return encodeURIComponent(s.subsystem_id)
-					}));
+						case "subsystems":
+							var subsystem_ids = selection.map(function(s){
+								return encodeURIComponent(s.subsystem_id)
+							});
 
-					var query = "q=genome_id:(" + unique_genome_ids.join(" OR ") + ") AND subsystem_id:(\"" + subsystem_ids.join("\" OR \"") + "\")&fl=feature_id&rows=25000";
-					var that = this;
-					when(request.post(PathJoin(window.App.dataAPI, '/subsystem/'), {
-						handleAs: 'json',
-						headers: {
-							'Accept': "application/solr+json",
-							'Content-Type': "application/solrquery+x-www-form-urlencoded",
-							'X-Requested-With': null,
-							'Authorization': (window.App.authorizationToken || "")
-						},
-						data: query
-					}), function(response){
+							var query = "q=genome_id:(" + this.state.genome_ids.join(" OR ") + ") AND subsystem_id:(\"" + subsystem_ids.join("\" OR \"") + "\")&fl=feature_id&rows=25000";
 
-						var feature_ids = response.response.docs.map(lang.hitch(this, function(val) {
-							return {"feature_id": val.feature_id};
-						}))
+							when(request.post(PathJoin(window.App.dataAPI, '/subsystem/'), {
+								handleAs: 'json',
+								headers: {
+									'Accept': "application/solr+json",
+									'Content-Type': "application/solrquery+x-www-form-urlencoded",
+									'X-Requested-With': null,
+									'Authorization': (window.App.authorizationToken || "")
+								},
+								data: query
+							}), function(response){
 
-						var dlg = new Dialog({title: "Add selected items to group"});
-						var stg = new SelectionToGroup({
-							selection: feature_ids,
-							type: "feature_group",
-							inputType: "feature_data",
-							path: ""
-						});
-						on(dlg.domNode, "dialogAction", function(){
-							dlg.hide();
-							setTimeout(function(){
-								dlg.destroy();
-							}, 2000);
-						});
-						domConstruct.place(stg.domNode, dlg.containerNode, "first");
-						stg.startup();
-						dlg.startup();
-						dlg.show();
-					});
+								var feature_ids = response.response.docs.map(lang.hitch(this, function(val) {
+									return {"feature_id": val.feature_id};
+								}))
+
+								var dlg = new Dialog({title: "Add selected items to group"});
+								var stg = new SelectionToGroup({
+									selection: feature_ids,
+									type: "feature_group",
+									inputType: "feature_data",
+									path: ""
+								});
+								on(dlg.domNode, "dialogAction", function(){
+									dlg.hide();
+									setTimeout(function(){
+										dlg.destroy();
+									}, 2000);
+								});
+								domConstruct.place(stg.domNode, dlg.containerNode, "first");
+								stg.startup();
+								dlg.startup();
+								dlg.show();
+							});
+							break;
+
+						case "genes":
+							var feature_ids = selection.map(lang.hitch(this, function(val) {
+								return {"feature_id": val.feature_id};
+							}))
+
+							var dlg = new Dialog({title: "Add selected items to group"});
+							var stg = new SelectionToGroup({
+								selection: feature_ids,
+								type: "feature_group",
+								inputType: "feature_data",
+								path: ""
+							});
+							on(dlg.domNode, "dialogAction", function(){
+								dlg.hide();
+								setTimeout(function(){
+									dlg.destroy();
+								}, 2000);
+							});
+							domConstruct.place(stg.domNode, dlg.containerNode, "first");
+							stg.startup();
+							dlg.startup();
+							dlg.show();
+							break;
+
+						default:
+							break;
+					}
+
+					
 				},
 				false
 			],
