@@ -47,7 +47,7 @@ define([
 				handleAs: "json",
 				"headers": {accept: "application/solr+json"}
 			}).then(function(response){
-				return parseFacetCounts(response.facet_counts.facet_fields)
+				return parseFacetCounts(response.facet_counts.facet_fields);
 			})
 		},
 
