@@ -11,11 +11,32 @@ define([
     store: null,
     subsystemSvg: null,
     genomeView: false,
+    subsystemReferenceData: {},
 
     constructor: function(){
 
       this.watch("state", lang.hitch(this, "onSetState"));
     },
+
+    superClassColorCodes: {
+      "CELLULAR PROCESSES":                   Theme.colors[0],
+      "MEMBRANE TRANSPORT":                   Theme.colors[1],
+      "METABOLISM":                           Theme.colors[2],
+      "REGULATION AND CELL SIGNALING":        Theme.colors[3],
+      "STRESS RESPONSE, DEFENSE, VIRULENCE":  Theme.colors[4],
+      "CELL ENVELOPE":                        Theme.colors[5],
+      "CELLULAR PROCESSES":                   Theme.colors[6],
+      "DNA PROCESSING":                       Theme.colors[7],
+      "ENERGY":                               Theme.colors[8],
+      "MEMBRANE TRANSPORT":                   Theme.colors[9],
+      "METABOLISM":                           Theme.colors[10],
+      "MISCELLANEOUS":                        Theme.colors[11],
+      "PROTEIN PROCESSING":                   Theme.colors[12],
+      "REGULATION AND CELL SIGNALING":        Theme.colors[13],
+      "RNA PROCESSING":                       Theme.colors[14],
+      "STRESS RESPONSE, DEFENSE, VIRULENCE":  Theme.colors[15]
+    },
+
 
     // x + "Other" as aggregation of what is left over
     subsystemMaxNumToDisplay: 16,
@@ -49,7 +70,8 @@ define([
 
       Deferred.when(this.store.query(), function(data) {
         if (!oldState) {
-          that.drawGraphAndLegend(data);
+          that.subsystemReferenceData = $.extend(true, [], data);
+          that.drawSubsystemPieChartGraph(data);
         }
         
       });
@@ -57,7 +79,7 @@ define([
 
     //function is coupled because color data is used across circle and tree to match
     //color data is rendered via d3 library programmatically
-    drawGraphAndLegend: function(subsystemData) {
+    drawSubsystemPieChartGraph: function(subsystemData) {
 
       var that = this;
 
@@ -74,34 +96,12 @@ define([
         titleText = "";
       }
 
-      var superClassColorCodes = {
-        "CELLULAR PROCESSES":                   Theme.colors[0],
-        "MEMBRANE TRANSPORT":                   Theme.colors[1],
-        "METABOLISM":                           Theme.colors[2],
-        "REGULATION AND CELL SIGNALING":        Theme.colors[3],
-        "STRESS RESPONSE, DEFENSE, VIRULENCE":  Theme.colors[4],
-        "CELL ENVELOPE":                        Theme.colors[5],
-        "CELLULAR PROCESSES":                   Theme.colors[6],
-        "DNA PROCESSING":                       Theme.colors[7],
-        "ENERGY":                               Theme.colors[8],
-        "MEMBRANE TRANSPORT":                   Theme.colors[9],
-        "METABOLISM":                           Theme.colors[10],
-        "MISCELLANEOUS":                        Theme.colors[11],
-        "PROTEIN PROCESSING":                   Theme.colors[12],
-        "REGULATION AND CELL SIGNALING":        Theme.colors[13],
-        "RNA PROCESSING":                       Theme.colors[14],
-        "STRESS RESPONSE, DEFENSE, VIRULENCE":  Theme.colors[15]
-      }
-
       //var formattedSubsystemData = this.formatSubsystemData(subsystemData);
 
       var width = $( window ).width() * .85;
       var height = $( window ).height() * .6;
 
       var radius = Math.min(width, height) / 2 - 50;
-
-      var legendRectSize = 18;
-      var legendSpacing = 4;
 
       var color = d3.scale.category20();
 
@@ -149,10 +149,57 @@ define([
         .attr("stroke-width", "1px")
         .attr('fill', function(d) {
           //return color(d.data.val + " (" + d.data.count + ")");
-          return superClassColorCodes[d.data.val.toUpperCase()]
+          return that.superClassColorCodes[d.data.val.toUpperCase()]
       });
 
+      this.drawSubsystemLegend(subsystemData, svg, radius, false);
+
+      var tooltip = d3.select("body")
+        .append("div")
+        .style("position", "absolute")
+        .style("z-index", "10")
+        .style("background-color", "white")
+        .style("visibility", "hidden")
+
+      if (this.genomeView) {
+        var summaryBarWidth = width / 4;
+        var summaryBarHeight = height;
+
+        this.getSubsystemCoverageData(summaryBarWidth, summaryBarHeight);
+      }
+    },
+
+    selectedSuperclass: "",
+
+    drawSubsystemLegend: function(subsystemData, svg, radius, legendExpandedClassData) {
+      
+      var that = this;
+
       var margin = {left: 60};
+      var legendRectSize = 18;
+      var legendSpacing = 4;
+
+      subsystemData.forEach(function(data) {
+        data.colorCodeKey = data.val.toUpperCase();
+      });
+
+      //deep copy, not a reference
+      var originalSubsystemData = $.extend(true, [], subsystemData);
+      d3.select("#legendHolder").remove();
+      //add class data to superclass data in correct order
+      if (legendExpandedClassData) { 
+        
+        legendExpandedClassData.class.buckets.forEach(function(classData) {
+          classData.baseClass = true;
+          classData.colorCodeKey = legendExpandedClassData.colorCodeKey;
+        })
+        var superClassIndex = subsystemData.map(function(e) { return e.val; }).indexOf(legendExpandedClassData.val);
+        for (var i = 0; i < legendExpandedClassData.class.buckets.length; i++) {
+          //place behind index
+          var index = superClassIndex + i + 1;
+          subsystemData.splice(index, 0, legendExpandedClassData.class.buckets[i]);
+        }
+      }
 
       var legendHolder = svg.append('g')
         .attr('transform', "translate(" + (margin.left + radius) + ",0)")
@@ -172,7 +219,10 @@ define([
       });
 
       var legendCount = legendHolder.selectAll('.subsystemslegend').size();
-      var legendTitleOffset = legendCount * legendRectSize / 2 + 70;
+      if (legendExpandedClassData) {
+        legendCount += legendExpandedClassData.class.buckets.length;
+      }
+      var legendTitleOffset = legendCount * legendRectSize / 2 + 30;
 
       legendHolder.append('text')
         .attr('x', 0)
@@ -181,41 +231,78 @@ define([
         .style("font-size", "14px")
         .text("Subsystem Superclass Counts");
 
+      subsystemslegend.append("text")
+        .attr("style","font-family:FontAwesome;")
+        .attr('font-size', "20px" )
+        .attr('x', function(d) { 
+          if (d.hasOwnProperty("baseClass")) {
+            return 20;
+          } else {
+            return 0;
+          }
+        })
+        .attr('y', '16px')
+        .text(function(d) { 
+          if (d.hasOwnProperty("baseClass")) {
+            return;
+          } else {
+            return '\uf054' 
+          }
+        })
+        .on("click", function(d) {
+          if (!d.baseClass) {
+            //used to close an opened node
+            if (that.selectedSuperclass === d.colorCodeKey) {
+              d = false;
+            }
+            that.selectedSuperclass = d.colorCodeKey;
+            that.drawSubsystemLegend(originalSubsystemData, svg, radius, d);
+          }
+        });
+
       subsystemslegend.append('rect')
-          .attr("x", 0)
-          .attr('width', legendRectSize)
-          .attr('height', legendRectSize)                                   
-          .style('fill', function(d) { 
-            return superClassColorCodes[d.val.toUpperCase()]
-          })
-          .style('stroke',function(d) { 
-            return superClassColorCodes[d.val.toUpperCase()]
-          });
+        .attr('x', function(d) { 
+          if (d.hasOwnProperty("baseClass")) {
+            return 20 + legendRectSize;
+          } else {
+            return 0 + legendRectSize;
+          }
+        })
+        .attr('width', legendRectSize)
+        .attr('height', legendRectSize)                                  
+        .style('fill', function(d) { 
+          return that.superClassColorCodes[d.colorCodeKey]
+        })
+        .style('stroke',function(d) { 
+          return that.superClassColorCodes[d.colorCodeKey]
+        })
+        .on("click", function(d) {
+          if (d.hasOwnProperty("baseClass")) {
+            that.navigateToSubsystemsSubTabClass(d);
+          } else {
+            that.navigateToSubsystemsSubTabSuperclass(d);
+          }
+        });
         
       subsystemslegend.append('text')
-          .attr('x', legendRectSize + legendSpacing)
-          .attr('y', legendRectSize - legendSpacing)
-          .text(function(d) { return d.val + " (" + d.count + ")"; });
-
-      subsystemslegend.on("click", function(d) {
-        that.navigateToSubsystemsSubTabFromLegend(d);
-      })
-
-      var tooltip = d3.select("body")
-          .append("div")
-          .style("position", "absolute")
-          .style("z-index", "10")
-          .style("background-color", "white")
-          .style("visibility", "hidden")
-
-      if (this.genomeView) {
-        var summaryBarWidth = width / 4;
-        var summaryBarHeight = height;
-
-        this.getSubsystemCoverageData(summaryBarWidth, summaryBarHeight);
-      }
-
-      this.setSubsystemPieGraph();
+        .attr('x', function(d) { 
+          if (d.hasOwnProperty("baseClass")) {
+            return legendRectSize + legendRectSize + legendSpacing + 20;
+          } else {
+            return legendRectSize + legendRectSize + legendSpacing;
+          }
+        })
+        .attr('y', legendRectSize - legendSpacing)
+        .text(function(d) { return d.val + " (" + d.count + ")"; })
+        .on("click", function(d) {
+          if (d.hasOwnProperty("baseClass")) {
+            that.navigateToSubsystemsSubTabClass(d);
+          } else {
+            that.navigateToSubsystemsSubTabSuperclass(d);
+          }
+          
+        });
+        this.setSubsystemPieGraph();
     },
 
     getTotalSubsystems: function() {
@@ -416,13 +503,24 @@ define([
       }
     },
 
-    navigateToSubsystemsSubTabFromLegend: function(d) {
+    navigateToSubsystemsSubTabSuperclass: function(d) {
       switch (d.val) {
         case "Other":
           //do nothing
           break;
         default:
-          Topic.publish("navigateToSubsystemsGenesSubTab", d.val);
+          Topic.publish("navigateToSubsystemsSubTabSuperclass", d.val);
+          break;
+      }
+    },
+
+    navigateToSubsystemsSubTabClass: function(d) {
+      switch (d.val) {
+        case "Other":
+          //do nothing
+          break;
+        default:
+          Topic.publish("navigateToSubsystemsSubTabClass", d.val);
           break;
       }
     },
