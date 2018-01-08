@@ -128,39 +128,37 @@ define([
 			var isTransposed = (this.pmState.heatmapAxis === 'Transposed');
 			var originalAxis = this._getOriginalAxis(isTransposed, colID, rowID);
 
-			var roleId = encodeURIComponent(originalAxis.columnIds);
-			var genomeId = encodeURIComponent(originalAxis.rowIds);
+			var roleId = "\"" + originalAxis.columnIds + "\"";
+			var genomeId = originalAxis.rowIds;
 
-			var query = "?and(eq(role_id,\"" + roleId + "\"),eq(genome_id,\"" + genomeId + "\"))&limit(25000,0)";
+			var that = this;
 
-			Topic.publish("SubSystemMap", "showLoadingMask");
-			request.get(PathJoin(window.App.dataServiceURL, "subsystem", query), {
+			var query = "q=role_id:(" + roleId + ") AND genome_id:(" + genomeId + ")&rows=25000";
+			
+			return when(request.post(window.App.dataAPI + 'subsystem/', {
 				handleAs: 'json',
 				headers: {
-					'Accept': "application/json",
+					'Accept': "application/solr+json",
+					'Content-Type': "application/solrquery+x-www-form-urlencoded",
 					'X-Requested-With': null,
-					'Authorization': (window.App.authorizationToken || ""),
-					'Content-Type': 'application/solrquery+x-www-form-urlencoded'
-				}
-			}).then(lang.hitch(this, function(response){
-				Topic.publish("SubSystemMap", "hideLoadingMask");
-
-				// dedupe features
+					'Authorization': window.App.authorizationToken
+				},
+				data: query
+			}), function(response){
 				var featureSet = {};
-				response.forEach(function(d){
+				response.response.docs.forEach(function(d){
 					if(!featureSet.hasOwnProperty(d.feature_id)){
 						featureSet[d.feature_id] = true;
 					}
 				});
 				var features = Object.keys(featureSet);
 
-				this.dialog.set('content', this._buildPanelCellClicked(isTransposed, roleId, genomeId, features));
-				var actionBar = this._buildPanelButtons(colID, rowID, roleId, genomeId, features);
-				domConstruct.place(actionBar, this.dialog.containerNode, "last");
+				that.dialog.set('content', that._buildPanelCellClicked(isTransposed, roleId, genomeId, features));
+				var actionBar = that._buildPanelButtons(colID, rowID, roleId, genomeId, features);
+				domConstruct.place(actionBar, that.dialog.containerNode, "last");
 
-				this.dialog.show();
-			}));
-
+				that.dialog.show();
+			});
 		},
 
 		flashCellsSelected: function(flashObjectID, colIDs, rowIDs){
@@ -172,9 +170,6 @@ define([
 
 			var roleIds = originalAxis.columnIds;
 			var genomeIds = originalAxis.rowIds;
-
-			var encodedRoleIds = encodeURIComponent(originalAxis.columnIds);
-			var encodedGenomeIds = encodeURIComponent(originalAxis.rowIds);
 
 			var roleIdsQuotes = roleIds.map(function(role) {
 				return "\"" + role + "\""
@@ -240,10 +235,12 @@ define([
 			}
 
 			var text = [];
+
+			var cleanRoleName = roleId.replace(/_/g, ' ');
 			text.push('<b>Genome:</b> ' + genomeName);
-			text.push('<b>Product:</b> ' + description);
-			text.push('<b>Role ID:</b> ' + roleId);
-			//text.push('<b>Members:</b> ' + memberCount);
+			//text.push('<b>Product:</b> ' + description);
+			text.push('<b>Role ID:</b> ' + cleanRoleName);
+			text.push('<b>Members:</b> ' + memberCount);
 
 			return text.join("<br>");
 		},
@@ -252,7 +249,7 @@ define([
 			var text = [];
 			text.push('<b>Genomes Selected:</b> ' + genomeIds.length);
 			text.push('<b>Roles Selected:</b> ' + roleIds.length);
-			//text.push('<b>Members:</b> ' + features.length);
+			text.push('<b>Members:</b> ' + features.length);
 
 			return text.join("<br>");
 		},
