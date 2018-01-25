@@ -80,8 +80,6 @@ define([
       });
     },
 
-    //function is coupled because color data is used across circle and tree to match
-    //color data is rendered via d3 library programmatically
     drawSubsystemPieChartGraph: function(subsystemData) {
 
       var that = this;
@@ -98,8 +96,6 @@ define([
       else {
         titleText = "";
       }
-
-      //var formattedSubsystemData = this.formatSubsystemData(subsystemData);
 
       var width = $( window ).width() * .85;
       var height = $( window ).height() * .6;
@@ -152,7 +148,13 @@ define([
         .attr("stroke-width", "1px")
         .attr('fill', function(d) {
           //return color(d.data.val + " (" + d.data.count + ")");
-          return that.superClassColorCodes[d.data.val.toUpperCase()]
+          if (that.superClassColorCodes.hasOwnProperty(d.data.val.toUpperCase())) {
+            return that.superClassColorCodes[d.data.val.toUpperCase()]
+          } 
+          else {
+            return '#'+(Math.random()*0xFFFFFF<<0).toString(16);
+          }
+          
       });
 
       this.drawSubsystemLegend(subsystemData, svg, radius, false, false);
@@ -188,15 +190,45 @@ define([
 
       var margin = {left: 60};
       var legendRectSize = 14;
-      var legendSpacing = 3;
+      var legendSpacing = 5;
 
       subsystemData.forEach(function(data) {
         data.colorCodeKey = data.val.toUpperCase();
       });
 
+      var legendTitleOffset = 100;
+      var legendHorizontalOffset = (radius + 50) * 2 + 200;
+
       if (that.firstLoad) {
         that.subsystemReferenceData = $.extend(true, [], subsystemData);
         that.firstLoad = false;
+
+        //only render legend title once
+        d3.select("#subsystemspiechart svg").append('text')
+          .attr('x', legendHorizontalOffset)
+          .attr('y', legendTitleOffset)
+          .attr("text-anchor", "top") 
+          .style("font-weight", "bold")
+          .style("font-size", "14px")
+          .text("Subsystem Counts");
+
+        d3.select("#subsystemspiechart svg").append('text')
+          .attr('x', legendHorizontalOffset + 135)
+          .attr('y', legendTitleOffset)
+          .attr("text-anchor", "top") 
+          .style("font-weight", "bold")
+          .style("font-size", "14px")
+          .style('fill', 'blue')
+          .text(" (Subsystems, ");
+
+        d3.select("#subsystemspiechart svg").append('text')
+          .attr('x', legendHorizontalOffset + 230)
+          .attr('y', legendTitleOffset)
+          .attr("text-anchor", "top") 
+          .style("font-weight", "bold")
+          .style("font-size", "14px")
+          .style('fill', 'red')
+          .text("Genes)");
       }
       
       //deep copy, not a reference
@@ -255,21 +287,11 @@ define([
         .attr('class', 'subsystemslegend')
         .attr('transform', function(d, i) {
           var height = legendRectSize + legendSpacing;
-          var offset = 190;
+          var offset = 160;
           var horz = -1 * legendRectSize;
           var vert = i * height - offset;
           return 'translate(' + horz + ',' + vert + ')';
       });
-
-      var legendCount = legendHolder.selectAll('.subsystemslegend').size();
-      var legendTitleOffset = 210;
-
-      legendHolder.append('text')
-        .attr('x', 0)
-        .attr('y', -legendTitleOffset)
-        .style("font-weight", "bold")
-        .style("font-size", "14px")
-        .text("Subsystem Superclass Counts");
 
        subsystemslegend.append("foreignObject")
         //.attr("class","dgrid-expando-icon ui-icon ui-icon-triangle-1-se")
@@ -344,8 +366,8 @@ define([
             that.navigateToSubsystemsSubTabSuperclass(d);
           }
         });
-        
-      subsystemslegend.append('text')
+
+       subsystemslegend.append('text')
         .attr('x', function(d) { 
           if (d.hasOwnProperty("subclassScope")) {
             return legendRectSize + legendRectSize + legendSpacing + 40;
@@ -355,8 +377,10 @@ define([
             return legendRectSize + legendRectSize + legendSpacing;
           }
         })
-        .attr('y', legendRectSize - legendSpacing)
-        .text(function(d) { return d.val + " (" + d.subsystem_count + " subsystems, " + d.count + " genes)"; })
+        .attr('y', legendRectSize - legendSpacing + 2)
+        .text(function(d) { 
+          return d.val; 
+        })
         .on("click", function(d) {
           if (d.hasOwnProperty("subclassScope")) {
             that.navigateToSubsystemsSubTabSubclass(d);
@@ -366,7 +390,58 @@ define([
             that.navigateToSubsystemsSubTabSuperclass(d);
           }
         });
-        this.setSubsystemPieGraph();
+
+        subsystemslegend.append('text')
+          .attr('x', function(d) { 
+            if (d.hasOwnProperty("subclassScope")) {
+              return legendRectSize + legendRectSize + legendSpacing + 40 + this.parentElement.children[2].getComputedTextLength() + 10;
+            } else if (d.hasOwnProperty("classScope")) {
+              return legendRectSize + legendRectSize + legendSpacing + 20 + this.parentElement.children[2].getComputedTextLength() + 10;
+            } else {
+              return legendRectSize + legendRectSize + legendSpacing + this.parentElement.children[2].getComputedTextLength() + 10;
+            }
+          })
+          .attr('y', legendRectSize - legendSpacing + 2)
+          .text(function(d) { 
+            return " (" + d.subsystem_count + ", "; 
+          })
+          .style('fill', 'blue')
+          .on("click", function(d) {
+            if (d.hasOwnProperty("subclassScope")) {
+              that.navigateToSubsystemsSubTabSubclass(d);
+            } else if (d.hasOwnProperty("classScope")) {
+              that.navigateToSubsystemsSubTabClass(d);
+            } else {
+              that.navigateToSubsystemsSubTabSuperclass(d);
+            }
+          });
+
+        subsystemslegend.append('text')
+          .attr('x', function(d) { 
+            if (d.hasOwnProperty("subclassScope")) {
+              return legendRectSize + legendRectSize + legendSpacing + 40 + this.parentElement.children[2].getComputedTextLength() + this.parentElement.children[3].getComputedTextLength() + 15;
+            } else if (d.hasOwnProperty("classScope")) {
+              return legendRectSize + legendRectSize + legendSpacing + 20 + this.parentElement.children[2].getComputedTextLength() + this.parentElement.children[3].getComputedTextLength() + 15; 
+            } else {
+              return legendRectSize + legendRectSize + legendSpacing + this.parentElement.children[2].getComputedTextLength() + this.parentElement.children[3].getComputedTextLength() + 15;
+            }
+          })
+          .attr('y', legendRectSize - legendSpacing + 2)
+          .text(function(d) { 
+            return d.count + ")"; 
+          })
+          .style('fill', 'red')
+          .on("click", function(d) {
+            if (d.hasOwnProperty("subclassScope")) {
+              that.navigateToSubsystemsSubTabSubclass(d);
+            } else if (d.hasOwnProperty("classScope")) {
+              that.navigateToSubsystemsSubTabClass(d);
+            } else {
+              that.navigateToSubsystemsSubTabSuperclass(d);
+            }
+          });
+
+      this.setSubsystemPieGraph();
     },
 
     getTotalSubsystems: function() {
@@ -473,11 +548,14 @@ define([
       var proportionCovered = (subsystemCoverageData.totalSubsystems / subsystemCoverageData.totalGenomes).toFixed(2);
       var proportionNotCovered = (subsystemCoverageData.totalNotCovered / subsystemCoverageData.totalGenomes).toFixed(2);
 
-      var marginAdjustedTotalbarHeight = height * .7;
-      var marginTop = height - marginAdjustedTotalbarHeight;
+      var marginAdjustedTotalbarHeight = height * .9;
+      var marginTop = 100;
+      //var marginTop = height - marginAdjustedTotalbarHeight - 200;
 
-      var divHeightCovered = proportionCovered * marginAdjustedTotalbarHeight;
-      var divHeightNotCovered = proportionNotCovered * marginAdjustedTotalbarHeight;
+      var marginTopWithBuffer = marginTop + 30;
+
+      var divHeightCovered = proportionCovered * height - marginTop;
+      var divHeightNotCovered = proportionNotCovered * height - marginTop;
 
       var percentCovered = proportionCovered * 100;
       var percentNotCovered = proportionNotCovered * 100;
@@ -486,13 +564,13 @@ define([
 
       var svg = d3.select("#subsystemspiechart svg"),
           margin = {top: 0, right: 20, bottom: 30, left: 100},
-          width = +svg.attr("width") - margin.left - margin.right,
-          height = +svg.attr("height") - margin.top - margin.bottom,
+          // width = +svg.attr("width") - margin.left - margin.right,
+          // height = +svg.attr("height") - margin.top - margin.bottom,
           g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
       var coveredRect = svg.append("rect")
                           .attr("x", 120)
-                          .attr("y", marginTop)
+                          .attr("y", marginTopWithBuffer)
                           .attr("width", 50)
                           .style("fill", "#399F56")
                           .attr("id", "subsystemsCovered")
@@ -503,14 +581,11 @@ define([
 
       var notCoveredRect = svg.append("rect")
                             .attr("x", 120)
-                            .attr("y", divHeightCovered + marginTop)
+                            .attr("y", divHeightCovered + marginTopWithBuffer)
                             .attr("width", 50)
                             .style("fill", "#3F6993")
                             .attr("id", "subsystemsNotCovered")
                             .attr("height", divHeightNotCovered)
-                            // .on("click", function() {
-                            //   that.navigateToSubsystemsSubTabFromCoverageBar();
-                            // });
 
       svg.append("text")
         .attr("x", 150)             
@@ -520,17 +595,19 @@ define([
         .style("font-size", "14px")
         .text("Subsystem Coverage");
 
-      //percentages
+      var divHeightCoveredPercentageOffset = divHeightCovered / 2 + marginTopWithBuffer;
+      var divHeightNotCoveredPercentageOffset = divHeightNotCovered / 2 + divHeightCovered + marginTopWithBuffer;
+
       svg.append("text")
         .attr("x", 145)             
-        .attr("y", divHeightCovered / 2 + height / 3)
+        .attr("y", divHeightCoveredPercentageOffset)
         .attr("text-anchor", "middle")
         .style("fill", "#ffffff")
         .text(percentCovered + "%");
 
       svg.append("text")
         .attr("x", 145)             
-        .attr("y", divHeightNotCovered / 2 + divHeightCovered + height / 3)
+        .attr("y", divHeightNotCoveredPercentageOffset)
         .attr("text-anchor", "middle")
         .style("fill", "#ffffff")
         .text(percentNotCovered + "%");
