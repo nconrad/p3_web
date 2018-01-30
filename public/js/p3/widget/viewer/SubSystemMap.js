@@ -1,10 +1,10 @@
 define([
 	"dojo/_base/declare", "dojo/_base/lang", "dojo/when", "dojo/request", "dojo/dom-construct",
 	"dijit/layout/ContentPane", "dojo/_base/Deferred",
-	"./Base", "../../util/PathJoin", "../SubsystemMapContainer", "../../util/EncodeURIComponentExpanded"
+	"./Base", "../../util/PathJoin", "../SubsystemMapContainer", "../../util/EncodeURIComponentExpanded", "dojo/topic"
 ], function(declare, lang, when, request, domConstruct,
 			ContentPane, Deferred,
-			ViewerBase, PathJoin, SubsystemMapContainer, EncodeURIComponentExpanded){
+			ViewerBase, PathJoin, SubsystemMapContainer, EncodeURIComponentExpanded, Topic){
 	return declare([ViewerBase], {
 		"disabled": false,
 		"query": null,
@@ -14,6 +14,7 @@ define([
 		subsystemName: "",
 		subsystemClass: "",
 		subclass: "",
+		showHeader: false,
 		
 		taxonId: "",
 		displayDefaultGenomes: false,
@@ -42,9 +43,9 @@ define([
 
 				state.reference_genome_ids_only = reference_genome_ids;
 
-				that.state.genome_ids.forEach(function(genome_id){
-					reference_genome_ids.unshift(genome_id);
-				});
+				for ( var i = that.state.genome_ids.length - 1; i >= 0; i-- ) {
+					reference_genome_ids.unshift(that.state.genome_ids[i]);
+				}
 
 				state.genome_ids_with_reference = reference_genome_ids;
 				state.genome_ids = reference_genome_ids;
@@ -215,7 +216,9 @@ define([
 					geneInfo += " (" + that.state.genome_name + ")";
 				}
 
-				$('#subsystemheatmap').append( "<div id=\"subsystemheatmapheader\"></div>");
+				//$('#subsystemheatmap').append("<div id=\"toggleheaderwrapper\"><input id=\"toggleheader\" class=\"hideshowbutton\" value=\"hide\"/></div>");
+				
+				$('#subsystemheatmap').append("<div id=\"subsystemheatmapheader\"></div>");
 				// $('#subsystemheatmapheader').attr('style','height: 170px');
 				$('#subsystemheatmapheader').html( headerString + "<span style=\"color:#76a72d;font-size: 1.1em;font-weight: bold\">" + this.subsystemName + geneInfo + "</span>");
 
@@ -272,18 +275,38 @@ define([
 				this.state = {};
 			}
 
+			var that = this;
+
+			Topic.subscribe("SubSystemMapResize", lang.hitch(self, function(){
+				var key = arguments[0], value = arguments[1];
+				switch(key){
+					case "toggleDescription":
+						if (that.showHeader) {
+							that.addChild(that.viewerHeader);
+							that.showHeader = false;
+						} else {
+							dijit.byId(that.id).removeChild(dijit.byId("subsystemheatmapheadercontainer"));
+							that.showHeader = true;
+						}
+						break;
+					default:
+						break;
+				}
+			}))
+
 			this.inherited(arguments);
+
+			this.viewerHeader = new ContentPane({
+				content: "",
+				region: "top",
+				style: 'height: 110px',
+				id: "subsystemheatmapheadercontainer"
+			});
 
 			this.viewer = new SubsystemMapContainer({
 				region: "center",
 				state: this.state,
 				apiServer: this.apiServiceUrl
-			});
-
-			this.viewerHeader = new ContentPane({
-				content: "",
-				region: "top",
-				style: 'height: 110px'
 			});
 			
 			var headerContent = domConstruct.create("div", {"class": "PerspectiveHeader"});
