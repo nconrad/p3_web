@@ -95,30 +95,30 @@ define([
 				this.mainGridContainer.set('state', state);
 			}
 
-			if(state.autoFilterMessage){
-				var msg = '<table><tr style="background: #f9ff85;"><td><div class="WarningBanner">' + state.autoFilterMessage + "&nbsp;<i class='fa-1x icon-question-circle-o DialogButton' rel='help:/misc/GenomesLimit' /></div></td><td style='width:30px;'><i style='font-weight:400;color:#333;cursor:pointer;' class='fa-1x icon-cancel-circle close closeWarningBanner' style='color:#333;font-weight:200;'></td></tr></table>";
-				if(!this.messagePanel){
-					this.messagePanel = new ContentPane({
-						"class": "WarningPanel",
-						region: "top",
-						content: msg
-					});
+			// if(state.autoFilterMessage){
+			// 	var msg = '<table><tr style="background: #f9ff85;"><td><div class="WarningBanner">' + state.autoFilterMessage + "&nbsp;<i class='fa-1x icon-question-circle-o DialogButton' rel='help:/misc/GenomesLimit' /></div></td><td style='width:30px;'><i style='font-weight:400;color:#333;cursor:pointer;' class='fa-1x icon-cancel-circle close closeWarningBanner' style='color:#333;font-weight:200;'></td></tr></table>";
+			// 	if(!this.messagePanel){
+			// 		this.messagePanel = new ContentPane({
+			// 			"class": "WarningPanel",
+			// 			region: "top",
+			// 			content: msg
+			// 		});
 
-					var _self = this;
-					on(this.messagePanel.domNode, ".closeWarningBanner:click", function(evt){
-						if(_self.messagePanel){
-							_self.removeChild(_self.messagePanel);
-						}
-					});
-				}else{
-					this.messagePanel.set("content", msg);
-				}
-				this.addChild(this.messagePanel);
-			}else{
-				if(this.messagePanel){
-					this.removeChild(this.messagePanel)
-				}
-			}
+			// 		var _self = this;
+			// 		on(this.messagePanel.domNode, ".closeWarningBanner:click", function(evt){
+			// 			if(_self.messagePanel){
+			// 				_self.removeChild(_self.messagePanel);
+			// 			}
+			// 		});
+			// 	}else{
+			// 		this.messagePanel.set("content", msg);
+			// 	}
+			// 	this.addChild(this.messagePanel);
+			// }else{
+			// 	if(this.messagePanel){
+			// 		this.removeChild(this.messagePanel)
+			// 	}
+			// }
 		},
 
 		visible: false,
@@ -216,7 +216,7 @@ define([
 						subsystem_name: 	{label: 'Subsystem Name', field: 'subsystem_name'},
 						role_id: 			{label: "Role ID", field: "role_id", hidden: true},
 						role_name: 			{label: "Role Name", field: "role_name"},
-						patric_id: 			{label: "Patric ID", field: "patric_id"},
+						patric_id: 			{label: "PATRIC ID", field: "patric_id"},
 						gene: 				{label: "Gene", field: "gene"},
 						product: 			{label: "Product", field: "product"},
 						refseq_locus_tag: 	{label: 'RefSeq Locus Tag', field: 'refseq_locus_tag'},
@@ -282,7 +282,7 @@ define([
 						role_id: 			{label: "Role ID", field: "role_id", hidden: true},
 						role_name: 			{label: "Role Name", field: "role_name"},
 						active: 			{label: "Active", field: "active"},
-						patric_id: 			{label: "Patric ID", field: "patric_id"},
+						patric_id: 			{label: "PATRIC ID", field: "patric_id"},
 						gene: 				{label: "Gene", field: "gene"},
 						product: 			{label: "Product", field: "product"},
 						subsystem_id: 		{label: "Subsystem ID", field: "subsystem_id", hidden: true}
