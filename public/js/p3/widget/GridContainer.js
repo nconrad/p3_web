@@ -1227,19 +1227,20 @@ define([
       selection.forEach(function (sel) {
         var id = sel.genome_id;
 
-        var readList = sel.user_read,
-          writeList = sel.user_write;
+        var readList = sel.user_read || [],
+          writeList = sel.user_write || [];
 
-        var writeObjs = (writeList || []).map(function (user) {
-          var obj = {
-            user: user,
-            perm: 'Can edit'
-          };
+        var writeObjs = writeList
+          .map(function (user) {
+            var obj = {
+              user: user,
+              perm: 'Can edit'
+            };
 
-          return obj;
-        });
+            return obj;
+          });
 
-        var readObjs = (readList || [])
+        var readObjs = readList
           .filter(function (user) {
             // if user has write permission, only list that
             return writeList.indexOf(user) == -1;
