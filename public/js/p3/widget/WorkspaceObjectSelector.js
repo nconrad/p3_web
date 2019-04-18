@@ -6,7 +6,8 @@ define([
   './WorkspaceExplorerView', 'dojo/dom-construct', '../WorkspaceManager', 'dojo/store/Memory',
   './Uploader', 'dijit/layout/BorderContainer', 'dojo/dom-attr',
   'dijit/form/Button', 'dojo/_base/Deferred', 'dijit/form/CheckBox', 'dojo/topic', 'dijit/Tooltip',
-  'dijit/registry', 'dgrid/editor', './formatter', 'dijit/form/FilteringSelect', 'dijit/form/Select'
+  'dijit/registry', 'dgrid/editor', './formatter', 'dijit/form/FilteringSelect', 'dijit/form/Select',
+  'dijit/layout/StackContainer', 'dijit/layout/TabController'
 ], function (
   declare, WidgetBase, on, lang, query,
   domClass, Templated, WidgetsInTemplate,
@@ -14,7 +15,8 @@ define([
   Grid, domConstr, WorkspaceManager, Memory,
   Uploader, BorderContainer, domAttr,
   Button, Deferred, CheckBox, Topic, Tooltip,
-  registry, editor, formatter, FilteringSelect, Select
+  registry, editor, formatter, FilteringSelect, Select,
+  TabContainer, StackController
 ) {
 
   return declare([WidgetBase, Templated, WidgetsInTemplate], {
@@ -254,8 +256,8 @@ define([
         innerHTML: this.path,
         style: { margin: '5px 0 0 0' }
       }, wrap);
-      // domConstr.place('<br>', wrap)
-      // var sel = domConstr.create("span", {innerHTML: '<b>Selection: </b>', style: "text-align: right"}, wrap);
+
+
       this.selValNode = domConstr.create('div', {
         innerHTML: '<span class="selectedDest"><b>' + this.selectionText + ':</b> None.</span>',
         style: { margin: '5px 0', 'float': 'left' }
@@ -377,6 +379,7 @@ define([
         }
       });
 
+      /*
       var viewSelector = new Select({
         name: 'togglePublic',
         style: { width: '100px' },
@@ -401,8 +404,53 @@ define([
           _self.set('path', '/public/');
         }
       });
+      */
 
-      domConstr.place(frontBC.domNode, this.dialog.containerNode, 'first');
+      var container = this.dialog.containerNode;
+
+      // add tabe container
+      var tabContainer = domConstr.create('div', {
+        class: 'TextTabButtons'
+      }, container, 'first');
+
+      // add workspace tabs
+      var myWS = domConstr.create('span', {
+        innerHTML: 'My Workspaces',
+        class: 'active'
+      }, tabContainer);
+
+      var publicWS = domConstr.create('span', {
+        innerHTML: 'Public Workspaces'
+      }, tabContainer);
+
+      var sampleData = domConstr.create('span', {
+        innerHTML: 'Sample Data'
+      }, tabContainer);
+
+      var activateTab = function (tabNode) {
+        domClass.remove(query('.active', tabContainer)[0], 'active');
+        domClass.add(tabNode, 'active');
+      };
+
+      on(myWS, 'click', function () {
+        var home = '/' + window.App.user.id;
+        _self.set('path', home);
+        activateTab(this);
+      });
+
+      on(publicWS, 'click', function () {
+        _self.set('path', '/public/');
+        activateTab(this);
+      });
+
+      on(sampleData, 'click', function () {
+        let path = '/PATRIC@patricbrc.org/PATRIC Workshop';
+        _self.set('path', path);
+        activateTab(this);
+      });
+
+      domConstr.place(frontBC.domNode, container, 'last');
+
 
       var selectionPane = new ContentPane({
         region: 'top',
@@ -411,7 +459,7 @@ define([
       });
       this.selectionPane = selectionPane;
 
-      domConstr.place(viewSelector.domNode, selectionPane.containerNode, 'first');
+      // domConstr.place(viewSelector.domNode, selectionPane.containerNode, 'first');
 
       var buttonsPane = new ContentPane({ region: 'bottom', style: 'text-align: right;border:0px;' });
 

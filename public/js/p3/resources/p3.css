@@ -521,13 +521,20 @@ body.patric.claro .dijitTabDisabled {
     border-bottom: 1px solid #bbb;
 }
 
+/* custom tab without panels */
+.TextTabButtons span {
+    padding: 0 0 3px 0;
+    cursor: pointer;
+}
+
 .TextTabButtons .dijitTab {
     display: inline-block;
     transition-duration: 0s;
 }
 
 .TextTabButtons .dijitTab,
-.TextTabButtons .dijitToggleButton .dijitButtonNode {
+.TextTabButtons .dijitToggleButton .dijitButtonNode,
+.TextTabButtons span {
     border: 0;
     background-color: inherit;
     box-shadow: none;
@@ -539,16 +546,19 @@ body.patric.claro .dijitTabDisabled {
     margin-left: 10px;
 }
 
-.TextTabButtons .dijitTab.dijitChecked .tabLabel {
+.TextTabButtons .dijitTab.dijitChecked .tabLabel,
+.TextTabButtons .active a {
     color: #333;
     font-weight: 900;
 }
 
-.TextTabButtons .dijitTab.dijitChecked {
+.TextTabButtons .dijitTab.dijitChecked,
+.TextTabButtons .active {
     border-bottom: 4px solid #34698e;
 }
 
-.TextTabButtons .dijitTab .tabLabel:hover {
+.TextTabButtons .dijitTab .tabLabel:hover,
+.TextTabButtons span:hover {
     color: black;
 }
 
