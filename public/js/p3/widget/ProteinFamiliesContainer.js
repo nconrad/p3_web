@@ -24,31 +24,10 @@ define([
     apiServer: window.App.dataServiceURL,
     constructor: function (options) {
       // console.log(options);
+
+
       this.topicId = 'ProteinFamilies_' + options.id.split('_proteinFamilies')[0];
 
-      Topic.subscribe(this.topicId, lang.hitch(this, function () {
-        // console.log("ProteinFamiliesHeatmapContainer:", arguments);
-        var key = arguments[0],
-          value = arguments[1];
-
-        switch (key) {
-          case 'showMainGrid':
-            this.tabContainer.selectChild(this.mainGridContainer);
-            break;
-          case 'updatePfState':
-            this.pfState = value;
-            this.updateFilterPanel(value);
-            break;
-          case 'showLoadingMask':
-            this.loadingMask.show();
-            break;
-          case 'hideLoadingMask':
-            this.loadingMask.hide();
-            break;
-          default:
-            break;
-        }
-      }));
     },
     postCreate: function () {
       // create a loading mask
@@ -119,50 +98,23 @@ define([
         return;
       }
 
-      var filterPanel = this._buildFilterPanel();
-
       this.tabContainer = new TabContainer({ region: 'center', id: this.id + '_TabContainer' });
 
-      var tabController = new StackController({
-        containerId: this.id + '_TabContainer',
-        region: 'top',
-        'class': 'TextTabButtons'
-      });
+      domConstruct.create('div', {
+        innerHTML: 'Filter by one or more keywords',
+        id: 'grid-container'
+      }, this.tabContainer.domNode);
 
-      this.mainGridContainer = new MainGridContainer({
-        title: 'Table',
-        content: 'Protein Families Table',
-        state: this.state,
-        topicId: this.topicId,
-        apiServer: this.apiServer
-      });
-
-      // <sup style="vertical-align: super; background: #76a72d; color: #fff; padding: 1px 3px 3px 3px; border-radius: 3px;">
-      this.heatmapContainerNew = new HeatmapContainerNew({
-        title: 'Heatmap (new)',
-        type: 'webGLHeatmap',
-        topicId: this.topicId,
-        content: 'Heatmap (new)'
-      });
-
-      this.watch('state', lang.hitch(this, 'onSetState'));
-      this.tabContainer.addChild(this.mainGridContainer);
-      this.tabContainer.addChild(this.heatmapContainerNew);
-
-      var self = this;
-      this.tabContainer.watch('selectedChildWidget', function (name, oldTab, newTab) {
-        if (newTab.type === 'webGLHeatmap') {
-          self.heatmapContainerNew.update();
-        }
-      });
-
-      this.addChild(tabController);
       this.addChild(this.tabContainer);
-      this.addChild(filterPanel);
+
+      const e = React.createElement;
+      const domContainer = document.querySelector('#grid-container');
+      ReactDOM.render(e(PFContainer), domContainer);
 
 
       this.inherited(arguments);
       this._firstView = true;
+
     },
     updateFilterPanel: function (pfState) {
       // console.log("update filter panel selections", pfState);

@@ -8,9 +8,15 @@
     "move-src": "cp gulpified/app/app.js src/app/ && cp gulpified/app/p3app.js src/app/ && cp gulpified/widget/LoginForm.js src/widget",
     "eslint:fix": "./node_modules/eslint/bin/eslint.js --fix public/js/p3",
     "eslint:test": "./node_modules/eslint/bin/eslint.js public/js/p3",
-    "test:intern": "./node_modules/.bin/intern"
+    "test:intern": "intern",
+
+    "// new dev build system":  "-----",
+    "dev": "parcel /public/js/p3/protein-families/index.js",
+    "build": "parcel build /public/js/p3/protein-families/index.js"
   },
   "dependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-react-app": "^3.1.2",
     "body-parser": "~1.8.1",
     "clipboard-js": "^0.3.5",
     "cookie-parser": "~1.3.3",
@@ -44,16 +50,34 @@
     "webcola": "^3.3.6"
   },
   "devDependencies": {
+    "@handsontable/react": "^3.0.0",
     "aurelia-tools": "^1.0.0",
     "cross-env": "^5.0.1",
     "eslint": "^4.9.0",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.2.0",
     "gulp-replace": "^0.6.1",
+    "handsontable": "^7.1.0",
     "intern": "^4.0.0-rc.1",
     "minimatch": "^3.0.2",
     "request-promise": "^4.2.2",
     "stylelint": "^8.2.0",
     "stylelint-config-standard": "^17.0.0"
-  }
+  },
+  "description": "## Requirements",
+  "main": "app.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nconrad/p3_web.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nconrad/p3_web/issues"
+  },
+  "homepage": "https://github.com/nconrad/p3_web#readme"
 }
