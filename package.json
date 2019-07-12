@@ -9,12 +9,12 @@
     "eslint:fix": "./node_modules/eslint/bin/eslint.js --fix public/js/p3",
     "eslint:test": "./node_modules/eslint/bin/eslint.js public/js/p3",
     "test:intern": "intern",
-
-    "// new dev build system":  "-----",
+    "// new dev build system": "-----",
     "dev": "parcel /public/js/p3/protein-families/index.js",
     "build": "parcel build /public/js/p3/protein-families/index.js"
   },
   "dependencies": {
+    "axios": "^0.19.0",
     "babel-cli": "^6.26.0",
     "babel-preset-react-app": "^3.1.2",
     "body-parser": "~1.8.1",
