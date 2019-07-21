@@ -2,14 +2,16 @@ define([
   'dojo/_base/declare', 'dojo/_base/lang', 'dojo/on', 'dojo/topic', 'dojo/dom-construct',
   'dijit/layout/BorderContainer', 'dijit/layout/StackContainer', 'dijit/layout/TabController', 'dijit/layout/ContentPane',
   'dijit/form/RadioButton', 'dijit/form/Textarea', 'dijit/form/TextBox', 'dijit/form/Button', 'dijit/form/Select',
-  'dojox/widget/Standby', './ProteinFamiliesGridContainer', './ProteinFamiliesFilterGrid',
-  './ProteinFamiliesHeatmapContainerNew'
+  'dojox/widget/Standby',
+  './ActionBar', './ContainerActionBar',
+  './ProteinFamiliesGridContainer', './ProteinFamiliesFilterGrid', './ProteinFamiliesHeatmapContainer'
 ], function (
   declare, lang, on, Topic, domConstruct,
   BorderContainer, TabContainer, StackController, ContentPane,
   RadioButton, TextArea, TextBox, Button, Select,
-  Standby, MainGridContainer, FilterGrid,
-  HeatmapContainerNew
+  Standby,
+  ActionBar, ContainerActionBar,
+  MainGridContainer, FilterGrid, HeatmapContainer
 ) {
 
   return declare([BorderContainer], {
@@ -24,10 +26,31 @@ define([
     apiServer: window.App.dataServiceURL,
     constructor: function (options) {
       // console.log(options);
-
-
       this.topicId = 'ProteinFamilies_' + options.id.split('_proteinFamilies')[0];
 
+      Topic.subscribe(this.topicId, lang.hitch(this, function () {
+        // console.log("ProteinFamiliesHeatmapContainer:", arguments);
+        var key = arguments[0],
+          value = arguments[1];
+
+        switch (key) {
+          case 'showMainGrid':
+            this.tabContainer.selectChild(this.mainGridContainer);
+            break;
+          case 'updatePfState':
+            this.pfState = value;
+            this.updateFilterPanel(value);
+            break;
+          case 'showLoadingMask':
+            this.loadingMask.show();
+            break;
+          case 'hideLoadingMask':
+            this.loadingMask.hide();
+            break;
+          default:
+            break;
+        }
+      }));
     },
     postCreate: function () {
       // create a loading mask
@@ -40,6 +63,8 @@ define([
       this.loadingMask.startup();
     },
     onSetState: function (attr, oldVal, state) {
+      // console.log("ProteinFamiliesContainer set STATE.  genome_ids: ", state.genome_ids, " state: ", state);
+
       if (state.genome_ids && state.genome_ids.length > this.maxGenomeCount) {
         console.log('Too Many Genomes for Protein Families Display', state.genome_ids.length);
         return;
@@ -88,8 +113,8 @@ define([
       if (this.mainGridContainer) {
         this.mainGridContainer.set('visible', true);
       }
-      if (this.heatmapContainerNew) {
-        this.heatmapContainerNew.set('visible', true);
+      if (this.heatmapContainer) {
+        this.heatmapContainer.set('visible', true);
       }
     },
 
@@ -98,23 +123,40 @@ define([
         return;
       }
 
+      var filterPanel = this._buildFilterPanel();
+
       this.tabContainer = new TabContainer({ region: 'center', id: this.id + '_TabContainer' });
 
-      domConstruct.create('div', {
-        innerHTML: 'Filter by one or more keywords',
-        id: 'grid-container'
-      }, this.tabContainer.domNode);
+      var tabController = new StackController({
+        containerId: this.id + '_TabContainer',
+        region: 'top',
+        'class': 'TextTabButtons'
+      });
 
+      this.mainGridContainer = new MainGridContainer({
+        title: 'Table',
+        content: 'Protein Families Table',
+        state: this.state,
+        topicId: this.topicId,
+        apiServer: this.apiServer
+      });
+
+      this.heatmapContainer = new HeatmapContainer({
+        title: 'Heatmap',
+        topicId: this.topicId,
+        content: 'Heatmap'
+      });
+
+      this.watch('state', lang.hitch(this, 'onSetState'));
+
+      this.tabContainer.addChild(this.mainGridContainer);
+      this.tabContainer.addChild(this.heatmapContainer);
+      this.addChild(tabController);
       this.addChild(this.tabContainer);
-
-      const e = React.createElement;
-      const domContainer = document.querySelector('#grid-container');
-      ReactDOM.render(e(PFContainer), domContainer);
-
+      this.addChild(filterPanel);
 
       this.inherited(arguments);
       this._firstView = true;
-
     },
     updateFilterPanel: function (pfState) {
       // console.log("update filter panel selections", pfState);
@@ -152,8 +194,7 @@ define([
         title: 'filter',
         content: 'Filter By',
         style: 'width:283px; overflow: auto',
-        splitter: true,
-        'class': 'filterPanel'
+        splitter: true
       });
 
       var familyTypePanel = new ContentPane({

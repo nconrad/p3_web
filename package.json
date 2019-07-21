@@ -10,11 +10,11 @@
     "eslint:test": "./node_modules/eslint/bin/eslint.js public/js/p3",
     "test:intern": "intern",
     "// new dev build system": "-----",
-    "dev": "parcel /public/js/p3/protein-families/index.js",
-    "build": "parcel build /public/js/p3/protein-families/index.js"
+    "dev": "parcel ./public/js/p3/2.0/index.html",
+    "build": "parcel build ./public/js/p3/2.0/index.html"
   },
   "dependencies": {
-    "axios": "^0.19.0",
+    "@material-ui/core": "^4.2.0",
     "babel-cli": "^6.26.0",
     "babel-preset-react-app": "^3.1.2",
     "body-parser": "~1.8.1",
@@ -43,6 +43,9 @@
     "nodemailer-smtp-transport": "^0.1.13",
     "promised-io": "^0.3.5",
     "pug": "^2.0.0-rc.3",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "react-redux": "^7.1.0",
     "request": "^2.87.0",
     "rql": "^0.3.3",
     "serve-favicon": "^2.5.0",
@@ -52,6 +55,7 @@
   "devDependencies": {
     "@handsontable/react": "^3.0.0",
     "aurelia-tools": "^1.0.0",
+    "axios": "^0.19.0",
     "cross-env": "^5.0.1",
     "eslint": "^4.9.0",
     "eslint-config-airbnb-base": "^12.1.0",
