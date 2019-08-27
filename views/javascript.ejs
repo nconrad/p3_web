@@ -11,6 +11,22 @@ dojoConfig = {
 <script type="text/javascript" src="/js/mauve_viewer/dist/mauve-viewer.js"></script>
 <script type="text/javascript" src="/js/msa/dist/msa.min.js"></script>
 <script src="/js/bundle/bundle.js"></script>
+
+<% if (request && request.production){ %>
+  <script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+<% } else { %>
+  <script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+<% } %>
+<script>
+  window.React = React;
+  window.ReactDOM = ReactDOM;
+  //console.log('react', JSON.decode(JSON.stringify(React)))
+  //delete React;
+  console.log('React2', window.React)
+</script>
+
 <!-- // use bundle.js
 <script type="text/javascript" src="/js/cytoscape/dist/cytoscape.min.js"></script>
 <script type="text/javascript" src="/js/jquery/dist/jquery.min.js"></script>

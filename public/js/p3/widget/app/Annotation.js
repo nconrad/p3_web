@@ -2,11 +2,15 @@ define([
   'dojo/_base/declare', 'dojo/_base/array', 'dijit/_WidgetBase', 'dojo/on',
   'dojo/dom-class', 'dijit/_TemplatedMixin', 'dijit/_WidgetsInTemplateMixin',
   'dojo/text!./templates/Annotation.html', './AppBase',
-  'dojo/_base/lang', '../../WorkspaceManager'
+  'dojo/_base/lang', '../../WorkspaceManager',
+  'p3/p4-apps/dist/annotate'
+
 ], function (
   declare, array, WidgetBase, on,
   domClass, Templated, WidgetsInTemplate,
-  Template, AppBase, lang, WorkspaceManager
+  Template, AppBase,
+  lang, WorkspaceManager,
+  Annotate
 ) {
   return declare([AppBase], {
     baseClass: 'Annotation',
@@ -29,6 +33,7 @@ define([
     },
 
     startup: function () {
+      console.log('here')
       var _self = this;
       if (this._started) { return; }
       this.inherited(arguments);
@@ -37,6 +42,10 @@ define([
       }
       _self.defaultPath = WorkspaceManager.getDefaultFolder() || _self.activeWorkspacePath;
       _self.output_pathWidget.set('value', _self.defaultPath);
+
+      const e = window.React.createElement;
+      const domContainer = document.querySelector('.PanelForm');
+      window.ReactDOM.render( e(Annotate.default), domContainer);
     },
 
     changeCode: function (item) {
