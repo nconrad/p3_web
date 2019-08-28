@@ -5,9 +5,10 @@ define([
   'dojo/_base/Deferred',
   'dojo/store/JsonRest', 'dojox/widget/Toaster',
   'dojo/ready', './app', '../router',
-  'dojo/window', '../widget/Drawer', 'dijit/layout/ContentPane',
+  'dojo/window', '../widget/Drawer',
   '../jsonrpc', '../panels', '../WorkspaceManager', '../DataAPI', 'dojo/keys',
-  'dijit/Dialog', '../util/PathJoin', 'dojo/request', '../widget/WorkspaceController'
+  'dijit/Dialog', '../util/PathJoin', 'dojo/request', '../widget/WorkspaceController',
+  '../../p4-apps/dist/apps'
 ], function (
   declare,
   Topic, on, dom, domClass, domAttr, domConstruct, domQuery,
@@ -16,9 +17,10 @@ define([
   JsonRest, Toaster,
   Ready, App,
   Router, Window,
-  Drawer, ContentPane,
+  Drawer,
   RPC, Panels, WorkspaceManager, DataAPI, Keys,
-  Dialog, PathJoin, xhr, WorkspaceController
+  Dialog, PathJoin, xhr, WorkspaceController,
+  Apps
 ) {
   return declare([App], {
     panels: Panels,
@@ -309,6 +311,14 @@ define([
 
       Router.register('/app(/.*)', function (params, path) {
         // console.log("view URL Callback", arguments);
+        var parts = path.split('/');
+        parts.shift();
+        var type = parts.shift();
+
+        // load the react component
+        Apps.startApp('#ApplicationContainer');
+
+        return;
 
         var parts = path.split('/');
         parts.shift();

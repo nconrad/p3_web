@@ -11,3 +11,14 @@
 		<link rel="manifest" href="/public/manifest.json">
 		<link rel='stylesheet' href='/js/mauve_viewer/dist/mauve-viewer.css' />
 		<link rel="icon" sizes="16x16 32x32" href="/patric/favicon.ico">
+<<<<<<< Updated upstream
+=======
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,400i,700|Roboto:400,700&display=swap">
+		<% if (request && request.production) { %>
+		<link rel='stylesheet' href='/js/<%- request.package.version %>/p3/resources/p3.css' />
+		<% } else { %>
+		<link rel='stylesheet' href='/js/p3/resources/p3.css' />
+		<% } %>
+		<link rel='stylesheet' href='/public/assets/css/patric_bootstrap.css' />
+		<link rel='stylesheet' href='/js/p4-apps/src/styles.css' />
+>>>>>>> Stashed changes
