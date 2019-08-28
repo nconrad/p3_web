@@ -65,6 +65,3 @@
 [submodule "public/js/mauve_viewer"]
 	path = public/js/mauve_viewer
 	url = https://github.com/nconrad/mauve_viewer
-[submodule "public/js/p4-apps"]
-	path = public/js/p4-apps
-	url = https://github.com/nconrad/patric-ui
