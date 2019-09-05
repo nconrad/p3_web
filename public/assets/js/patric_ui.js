@@ -19,6 +19,37 @@ $(document).ready(function () {
     $('.dropdown.show').removeClass('show');
   });
 
+  /*
+  function hideDropdown() {
+    $('.dropdown-menu.show').removeClass('show');
+    $('.dropdown.show').removeClass('show');
+  }
+
+  function isDropdownOpen() {
+    return $('.dropdown.show').length > 0;
+  }
+
+  // after click, change on hover
+  $('.nav-item').on('click', function () {
+    $('.nav-item').hover(function () {
+      if (!isDropdownOpen()) return;
+      console.log('there was hover')
+
+      hideDropdown();
+      $(this).addClass('show');
+      $(this).find('.dropdown-menu').addClass('show');
+    });
+  });*/
+
+  $('#navbarDropdown_search').click(function () {
+    console.log('click')
+    var self = this;
+    setTimeout(function () {
+      var input = $(self).siblings('.dropdown-menu').find('.dijitInputInner');
+      input.focus();
+    });
+  });
+
   /**
    * "Email PATRIC" form
   */
