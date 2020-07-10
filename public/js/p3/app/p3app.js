@@ -25,18 +25,17 @@ define([
     activeWorkspace: null,
     activeWorkspacePath: '/',
     uploadInProgress: false,
-    activeMouse: true,
+    activeMouse: false,
     alreadyLoggedIn: false,
     authorizationToken: null,
     user: '',
     startup: function () {
       var _self = this;
       this.checkLogin();
-      // this.upploadInProgress = false;
+
       on(document.body, 'keypress', function (evt) {
         var charOrCode = evt.charCode || evt.keyCode;
-        // console.log("keypress: ", charOrCode, evt.ctrlKey, evt.shiftKey);
-        /* istanbul ignore next */
+
         if ((charOrCode === 4) && evt.ctrlKey && evt.shiftKey) {
           if (!this._devDlg) {
             this._devDlg = new Dialog({
@@ -44,15 +43,17 @@ define([
               content: '<div data-dojo-type="p3/widget/DeveloperPanel" style="width:250px;height:450px"></div>'
             });
           }
-          // console.log("Dialog: ", this._devDlg);
+
           if (this._devDlg.open) {
             this._devDlg.hide();
           } else {
             this._devDlg.show();
           }
         }
+
+        console.log('window.App.activemouse', window.App.activeMouse);
       });
-      /* istanbul ignore next */
+
       var onDocumentTitleChanged = function () {
         // var meta = document.getElementsByTagName("meta[name='Keyword']");
         var meta = domQuery("meta[name='Keywords']")[0];
@@ -69,7 +70,7 @@ define([
       // listening document.title change event
       var titleEl = document.getElementsByTagName('title')[0];
       var docEl = document.documentElement;
-      /* istanbul ignore next */
+
       if (docEl && docEl.addEventListener) {
         docEl.addEventListener('DOMSubtreeModified', function (evt) {
           var t = evt.target;
@@ -88,13 +89,12 @@ define([
       function getState(params, path) {
         var parser = document.createElement('a');
         parser.href = path;
-        /* istanbul ignore next */
+
         var newState = params.state || {};
 
         newState.href = path;
         newState.prev = params.oldPath;
-        // console.log("parser getState: ", parser);
-        /* istanbul ignore next */
+
         if (newState.search) {
           // pass
         } else if (parser.search) {
@@ -103,13 +103,11 @@ define([
           newState.search = '';
         }
 
-        // console.log("New State Search: ", newState.search);
         newState.hash = parser.hash;
         newState.pathname = parser.pathname;
-        /* istanbul ignore next */
+
         if (newState.hash) {
           newState.hash = (newState.hash.charAt(0) === '#') ? newState.hash.substr(1) : newState.hash;
-          // console.log("PARSE HASH: ", newState.hash)
           newState.hashParams = newState.hashParams || {};
 
           var hps = newState.hash.split('&');
@@ -119,7 +117,6 @@ define([
               newState.hashParams[tup[0]] = tup[1];
             }
           });
-          // console.log("newState.hashParams: ", newState.hashParams)
         }
         return newState;
       }
@@ -149,34 +146,28 @@ define([
       });
 
       Router.register('/job(/.*)', function (params, oldPath, newPath, state) {
-        // console.log("Workspace URL Callback", params.newPath);
         var newState = populateState(params);
 
-        /* istanbul ignore next */
         var path = params.params[0] || '/';
         newState.widgetClass = 'p3/widget/JobManager';
         newState.value = path;
         newState.set = 'path';
         newState.requireAuth = true;
         newState.pageTitle = 'PATRIC Jobs';
-        // console.log("Navigate to ", newState);
+
         _self.navigate(newState);
       });
 
       Router.register('/search/(.*)', function (params, oldPath, newPath, state) {
-        // console.log("Search Route: ", arguments);
         var newState = getState(params, oldPath);
         newState.widgetClass = 'p3/widget/AdvancedSearch';
         newState.requireAuth = false;
-        // console.log("Navigate to ", newState);
         _self.navigate(newState);
       });
 
       Router.register('/uploads(/.*)', function (params, oldPath, newPath, state) {
-        // console.log("Upload URL Callback", params.newPath);
         var newState = populateState(params);
 
-        /* istanbul ignore next */
         var path = params.params[0] || '/';
         newState.widgetClass = 'p3/widget/UploadManager';
         newState.value = path;
@@ -187,10 +178,8 @@ define([
       });
 
       Router.register('/content(/.*)', function (params, oldPath, newPath, state) {
-        // console.log("Upload URL Callback", params.newPath);
         var newState = populateState(params);
 
-        /* istanbul ignore next */
         var path = params.params[0] || '/';
         newState.widgetClass = 'dijit/layout/ContentPane';
         newState.style = 'padding:0';
@@ -203,8 +192,7 @@ define([
       });
 
       Router.register('/webpage(/.*)', function (params, oldPath, newPath, state) {
-        // console.log("webpage", params);
-        /* istanbul ignore next */
+
         var path = params.params[0] || '/';
         var newState = getState(params, oldPath);
         newState.widgetClass = 'p3/widget/WebPagePane';
@@ -217,8 +205,6 @@ define([
       });
 
       Router.register('/user(/.*)', function (params, oldPath, newPath, state) {
-        // console.log('user', params);
-        /* istanbul ignore next */
         var path = params.params[0] || '/';
         var newState = getState(params, oldPath);
         newState.widgetClass = 'p3/widget/UserDetails';
@@ -230,8 +216,6 @@ define([
       });
 
       Router.register('/sulogin', function (params, oldPath, newPath, state) {
-        // console.log('sulogin', params);
-        /* istanbul ignore next */
         var path = params.params[0] || '/';
         var newState = getState(params, oldPath);
         newState.widgetClass = 'p3/widget/SuLogin';
@@ -243,10 +227,8 @@ define([
       });
 
       Router.register('/help(/.*)', function (params, oldPath, newPath, state) {
-        // console.log("Upload URL Callback", params.newPath);
         var newState = populateState(params);
 
-        /* istanbul ignore next */
         var path = params.params[0] || '/';
         newState.widgetClass = 'dijit/layout/ContentPane';
         newState.style = 'padding:0';
@@ -254,19 +236,17 @@ define([
         newState.set = 'href';
         newState.requireAuth = false;
         newState.pageTitle = 'PATRIC';
-        // console.log("Navigate to ", newState);
+
         _self.navigate(newState);
       });
 
 
       Router.register('/workspace(/.*)', function (params, oldPath, newPath, state) {
-        // console.log("Workspace URL Callback", params.newPath);
         var newState = populateState(params);
 
-        /* istanbul ignore next */
         var path = params.params[0] || ('/' + _self.user.id ); //  + "/home/")
         var parts = path.split('/');
-        /* istanbul ignore next */
+
         if (path.replace(/\/+/g, '') === 'public') {
           path = '/public/';
         } else if (parts.length < 3) {
@@ -295,7 +275,7 @@ define([
       Router.register('/status', function (params, path) {
         var newState = populateState(params);
 
-        /* istanbul ignore next */
+
         var path = params.params[0] || '/';
         newState.widgetClass = 'p3/widget/viewer/SystemStatus';
         newState.value = path;
@@ -314,44 +294,40 @@ define([
         parts.shift();
         var type = parts.shift();
         var viewerParams;
-        /* istanbul ignore if */
+
         if (parts.length > 0) {
           viewerParams = parts.join('/');
         } else {
           viewerParams = '';
         }
-        // console.log("Parts:", parts, type, viewerParams)
 
         var newState = populateState(params);
 
-        // console.log("Parts:", parts, type, path)
         newState.widgetClass = 'p3/widget/app/' + type;
         newState.value = viewerParams;
         newState.set = 'params';
+
         // move requireAuth check to AppBase and its derieved class
         newState.requireAuth = false;
 
-        // console.log("Navigate to ", newState);
         _self.navigate(newState);
       });
-      /* istanbul ignore else */
+
       if (!this.api) {
         this.api = {};
       }
-      /* istanbul ignore else */
+
       if (this.workspaceAPI) {
-        /* istanbul ignore next */
         WorkspaceManager.init(this.workspaceAPI, this.authorizationToken || '', this.user ? this.user.id : '');
         this.api.workspace = RPC(this.workspaceAPI, this.authorizationToken || '');
       }
-      /* istanbul ignore else */
+
       if (this.serviceAPI) {
-        // console.log("Setup API Service @ ", this.serviceAPI);
         this.api.service = RPC(this.serviceAPI, this.authorizationToken || '');
       }
-      /* istanbul ignore else */
+
       if (this.dataAPI) {
-        /* istanbul ignore else */
+
         if (this.dataAPI.charAt(-1) !== '/') {
           this.dataAPI = this.dataAPI + '/';
         }
@@ -361,11 +337,10 @@ define([
 
       this.toaster = new Toaster({ positionDirection: 'bl-up', messageTopic: '/Notification', duration: 3000 });
 
-      /* istanbul ignore else */
       if (this.user && this.user.id) {
         domAttr.set('YourWorkspaceLink', 'href', '/workspace/' + this.user.id);
         var n = dom.byId('signedInAs');
-        /* istanbul ignore else */
+
         if (n) {
           n.innerHTML = this.user.id.replace('@patricbrc.org', '');
         }
@@ -403,87 +378,68 @@ define([
       }, window.App.localStorageCheckInterval);
     },
     checkLogin: function () {
-      // console.log(window.App.uploadInProgress);
-      // console.log('checking for login');
-      if (localStorage.getItem('tokenstring')) {
-        var auth = localStorage.getItem('auth');
-        // console.log('Auth: ', auth);
-        var validToken = false;
-        if (auth) {
-          // console.log('Parse auth json', auth);
-          auth = JSON.parse(auth);
-          // console.log('Auth: ', auth);
-          // console.log('CheckExpToken', auth.expiry);
-          if (auth.expiry) {
-            validToken = this.checkExpToken(auth.expiry);
-            // console.log('this is a valid token: ' + validToken );
-            if (validToken && window.App.alreadyLoggedIn) {
-              return;
-            }
-          } else {
-            validToken = false;
-          }
-        }
+      var tokenstring = localStorage.getItem('tokenstring');
+      if (!tokenstring) {
+        return;
+      }
 
-        console.log('Valid Token: ', validToken);
-        if (validToken) { // && !window.App.alreadyLoggedIn) {
-          if (!document.body.className.includes('Authenticated')) {
-            document.body.className += 'Authenticated';
-            // console.log('add to body class');
-            // console.log(document.body.className);
-          }
-          // var docbody = document.getElementsByClassName('patric')[0];
-          // console.log(docbody);
-          window.App.user = JSON.parse(localStorage.getItem('userProfile'));
-          window.App.authorizationToken = localStorage.getItem('tokenstring');
-          // show the upload and jobs widget
-          window.App.uploadJobsWidget('show');
-          window.App.checkSU();
-          window.App.alreadyLoggedIn = true;
-        } else {
-          // if mouse has moved in past x minutes then refresh the token
-          // or if upload is in progress then refresh the token
-          // console.log('I am uploading a file');
-          console.log(window.App.uploadInProgress);
-          // console.log('The mouse has been active');
-          console.log(window.App.activeMouse);
-          if (window.App.activeMouse || window.App.uploadInProgress) {
-            console.log('going to refresh the token now');
-            var userServiceURL = window.App.userServiceURL;
-            userServiceURL.replace(/\/+$/, '');
-            xhr.get(userServiceURL + '/authenticate/refresh/', {
-              headers: {
-                'Accept': 'application/json',
-                'Authorization': window.App.authorizationToken
+      var auth = JSON.parse(localStorage.getItem('auth'));
+
+      var validToken = this.isTokenValid(auth.expiry);
+      if (auth && auth.expiry && validToken && window.App.alreadyLoggedIn) {
+        return;
+      }
+
+      if (validToken) {
+        document.body.classList.add('Authenticated');
+
+        window.App.user = JSON.parse(localStorage.getItem('userProfile'));
+        window.App.authorizationToken = tokenstring;
+
+        // show the upload and jobs widget
+        window.App.uploadJobsWidget('show');
+        window.App.checkSU();
+        window.App.alreadyLoggedIn = true;
+      } else {
+        // if mouse has moved in past x minutes then refresh the token
+        // or if upload is in progress then refresh the token
+        // console.log('I am uploading a file');
+        // console.log('upload in progress', window.App.uploadInProgress);
+        // console.log('activeMouse', window.App.activeMouse);
+        if (window.App.activeMouse || window.App.uploadInProgress) {
+          console.log('going to refresh the token now');
+          var userServiceURL = window.App.userServiceURL;
+          userServiceURL.replace(/\/+$/, '');
+          xhr.get(userServiceURL + '/authenticate/refresh/', {
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': window.App.authorizationToken
+            }
+          }).then(
+            function (data) {
+              localStorage.setItem('tokenstring', data);
+              window.App.authorizationToken = data;
+              var dataArr = data.split('|');
+              var keyValueArr = [];
+              var dataobj = {};
+              for (var i = 0; i < dataArr.length; i++) {
+                keyValueArr = dataArr[i].split('=');
+                dataobj[keyValueArr[0]] = keyValueArr[1];
               }
-            })
-              .then(
-                function (data) {
-                  // console.log('storing new token');
-                  console.log(data);
-                  localStorage.setItem('tokenstring', data);
-                  window.App.authorizationToken = data;
-                  var dataArr = data.split('|');
-                  var keyValueArr = [];
-                  var dataobj = {};
-                  for (var i = 0; i < dataArr.length; i++) {
-                    keyValueArr = dataArr[i].split('=');
-                    dataobj[keyValueArr[0]] = keyValueArr[1];
-                  }
-                  localStorage.setItem('auth', JSON.stringify(dataobj));
-                  window.App.checkLogin();
-                },
-                /* istanbul ignore next */
-                function (err) {
-                  console.log(err);
-                }
-              );
-          } else {
-            console.log('logging you out now, sorry');
-            window.App.logout();
-          }
+              localStorage.setItem('auth', JSON.stringify(dataobj));
+              window.App.checkLogin();
+            },
+
+            function (err) {
+              console.error(err);
+            }
+          );
+        } else {
+          console.error('logging you out now, sorry');
+          window.App.logout();
         }
       }
+
     },
     checkSU: function () {
       var suLink = document.getElementsByClassName('sulogin');
@@ -529,50 +485,43 @@ define([
       window.App.user = JSON.parse(localStorage.getItem('userProfile'));
       window.location.href = '/';
     },
-    checkExpToken: function (date) {
+    isTokenValid: function (date) {
       var d = new Date();
       var checkd = d.valueOf() / 1000;
 
       if (checkd > date) {
-        console.log('expired');
+        console.error('expired token');
         return false;
       }
       return true;
     },
     login: function (data, token) {
-      // console.log(data);
-      /* istanbul ignore else */
-      if (data !== undefined) {
-        localStorage.setItem('auth', JSON.stringify(data));
-        localStorage.setItem('tokenstring', token);
-        // localStorage.setItem('tokenid', data.tokenid);
-        var userid = data.un.replace('@patricbrc.org', '');
-        localStorage.setItem('userid', userid);
-        var userServiceURL = window.App.userServiceURL;
-        userServiceURL.replace(/\/+$/, '');
-        xhr.get(userServiceURL + '/user/' + userid, {
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': token
-          }
-        })
-          .then(
-            function (user) {
-              var userObj = JSON.parse(user);
-              userObj.id += '@patricbrc.org';
-              user = JSON.stringify(userObj);
-              localStorage.removeItem('userProfile');
-              localStorage.setItem('userProfile', user);
-              window.location.reload();
-            },
-            /* istanbul ignore next */
-            function (err) {
-              console.log(err);
-            }
-          );
-      } else {
-        console.log('i am not logged in yet');
+      if (!data || !token) {
+        return;
       }
+
+      localStorage.setItem('auth', JSON.stringify(data));
+      localStorage.setItem('tokenstring', token);
+
+      var userid = data.un.replace('@patricbrc.org', '');
+      localStorage.setItem('userid', userid);
+      var userServiceURL = window.App.userServiceURL;
+      userServiceURL.replace(/\/+$/, '');
+      xhr.get(userServiceURL + '/user/' + userid, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': token
+        }
+      }).then(function (user) {
+        var userObj = JSON.parse(user);
+        userObj.id += '@patricbrc.org';
+        user = JSON.stringify(userObj);
+        localStorage.removeItem('userProfile');
+        localStorage.setItem('userProfile', user);
+        window.location.reload();
+      }, function (err) {
+        console.error(err);
+      });
     },
     uploadJobsWidget: function (action) {
       if (action === 'show') {
@@ -589,6 +538,7 @@ define([
       }
     },
     refreshUser: function () {
+      console.log('refreshing user');
       xhr.get(this.userServiceURL + '/user/' + window.localStorage.userid, {
         headers: {
           'Accept': 'application/json',
@@ -607,28 +557,28 @@ define([
             // document.body.className += 'Authenticated';
             window.location.reload();
           },
-          /* istanbul ignore next */
           function (err) {
             console.log(err);
           }
         );
     },
     logout: function () {
-      if (!window.App.uploadInProgress) {
-        localStorage.removeItem('tokenstring');
-        localStorage.removeItem('userProfile');
-        localStorage.removeItem('auth');
-        localStorage.removeItem('userid');
-        localStorage.removeItem('Aauth');
-        localStorage.removeItem('Atokenstring');
-        localStorage.removeItem('AuserProfile');
-        localStorage.removeItem('Auserid');
-        window.location.assign('/');
-        // remove the upload and jobs widget
-        window.App.uploadJobsWidget('hide');
-      } else {
+      if (window.App.uploadInProgress) {
         alert('upload is in progress, try Logout again later');
+        return;
       }
+
+      localStorage.removeItem('tokenstring');
+      localStorage.removeItem('userProfile');
+      localStorage.removeItem('auth');
+      localStorage.removeItem('userid');
+      localStorage.removeItem('Aauth');
+      localStorage.removeItem('Atokenstring');
+      localStorage.removeItem('AuserProfile');
+      localStorage.removeItem('Auserid');
+      window.location.assign('/');
+      // remove the upload and jobs widget
+      window.App.uploadJobsWidget('hide');
     },
     updateMyDataSection: function (data) {
       var node = dom.byId('YourWorkspaceLink2');
@@ -684,7 +634,6 @@ define([
       domConstruct.empty('YourWorkspaces');
 
       data.forEach(function (ws) {
-        /* istanbul ignore if */
         if (ws.name !== 'home') return;
         var d = domConstruct.create('div', { style: { 'padding-left': '12px' } }, wsNode);
         domConstruct.create('i', {
