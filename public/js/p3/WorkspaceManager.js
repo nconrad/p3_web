@@ -884,7 +884,7 @@ define([
      * takes path string and list of permission objects of form
      * [{user: 'user@patricbrc.org', permission: <'r'|'w'|'n'|'a'|>}, ... ]
      */
-    setPermissions: (path, permissions) => {
+    setPermissions: function (path, permissions) {
       var _self = this;
 
       // map list of objs to list of lists
